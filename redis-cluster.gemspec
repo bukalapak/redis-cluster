@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 $LOAD_PATH.push File.expand_path('../lib', __FILE__)
-require 'redis-cluster/version'
+require 'redis_cluster/version'
 
 Gem::Specification.new do |s|
   s.name              = 'redis-cluster'
