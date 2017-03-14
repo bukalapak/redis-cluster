@@ -13,4 +13,6 @@ Gem::Specification.new do |s|
 
   s.files             = %w(README.md) + Dir.glob('{lib/**/*}')
   s.require_paths     = ['lib']
+
+  s.add_runtime_dependency 'redis', '~> 3.0'
 end

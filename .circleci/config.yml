@@ -1,0 +1,33 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: ruby:2.3
+    working_directory: /redis_cluster
+    steps:
+      - checkout
+      - run: bundle install
+
+      - run: |
+          wget http://download.redis.io/releases/redis-3.2.8.tar.gz
+          tar xvzf redis-3.2.8.tar.gz
+          cd redis-3.2.8 && make
+          cp src/redis-server /bin
+      - run:
+          name: redis1
+          command: redis-server .circleci/7001.conf
+          background: true
+      - run:
+          name: redis2
+          command: redis-server .circleci/7002.conf
+          background: true
+      - run:
+          name: redis2
+          command: redis-server .circleci/7003.conf
+          background: true
+      - run: sleep 3
+      - run:
+          name: setup cluster
+          command: .circleci/redis-trib.rb create 127.0.0.1:7001 127.0.0.1:7002 127.0.0.1:7003
+
+      - run: rake
