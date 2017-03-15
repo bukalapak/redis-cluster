@@ -6,9 +6,23 @@ jobs:
     working_directory: /redis_cluster
     steps:
       - checkout
-      - run: bundle install
 
+      - restore_cache:
+          keys:
+            - vendor-{{ checksum "Gemfile.lock" }}
+            - vendor
+      - run: bundle install --deployment
+      - save_cache:
+          paths: [vendor]
+          key: vendor-{{ checksum "Gemfile.lock" }}
+
+      - restore_cache:
+          key: 'redis-3.2.8'
       - run: .circleci/install.sh
+      - save_cache:
+          paths: [/bin/redis-server]
+          key: "redis-3.2.8"
       - run: .circleci/start.sh
 
       - run: rake
+

@@ -11,4 +11,4 @@ echo $! >> .circleci/pid
 
 sleep 3
 
-.circleci/redis-trib.rb create 127.0.0.1:7001 127.0.0.1:7002 127.0.0.1:7003
+bundle exec .circleci/redis-trib.rb create 127.0.0.1:7001 127.0.0.1:7002 127.0.0.1:7003
