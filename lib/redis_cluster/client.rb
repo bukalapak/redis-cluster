@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require 'redis'
 
 class RedisCluster
 
@@ -13,9 +14,9 @@ class RedisCluster
       @url = "#{client.host}:#{client.port}"
     end
 
-    def call(command)
+    def call(command, &block)
       push(command)
-      commit
+      commit(&block)
     end
 
     def push(command)
@@ -33,7 +34,8 @@ class RedisCluster
       end
       @queue = []
 
-      result.size > 1 ? result : result.first
+      reply = result.size > 1 ? result : result.first
+      block_given? ? yield(reply) : reply
     end
   end
 end

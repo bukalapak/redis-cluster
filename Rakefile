@@ -13,6 +13,14 @@ task default: [ :test, :lint ]
 task test: :spec
 task lint: :rubocop
 
+task :start do
+  sh '.circleci/start.sh'
+end
+
+task :stop do
+  sh '.circleci/stop.sh'
+end
+
 desc 'Run specs'
 RSpec::Core::RakeTask.new do |t|
   t.rspec_opts = '--require ./spec/spec_helper.rb'

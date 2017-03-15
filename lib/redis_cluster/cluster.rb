@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require_relative 'client'
 
 class RedisCluster
 
@@ -18,15 +19,17 @@ class RedisCluster
 
     # Return Redis::Client for a given key.
     # Modified from https://github.com/antirez/redis-rb-cluster/blob/master/cluster.rb#L104-L117
-    def for(key)
+    def slot_for(key)
       if (s = key.index('{'))
         if (e = key.index('}', s + 1)) && e != s+1
           key = key[s+1..e-1]
         end
       end
+      crc16(key) % HASH_SLOTS
+    end
 
-      slot = crc16(key) % HASH_SLOTS
-      slots[slot]
+    def client_for(key)
+      slots[slot_for(key)]
     end
 
     def random
@@ -51,10 +54,6 @@ class RedisCluster
 
     private
 
-    def logger
-      option[:logger]
-    end
-
     def slots_and_clients(client)
       client.call([:cluster, :slots]) do |result|
         result.each do |from, to, server|
@@ -62,7 +61,7 @@ class RedisCluster
           clients[url] ||= create_client(url)
 
           (from..to).each do |slot|
-            slots[slot] = client[url]
+            slots[slot] = clients[url]
           end
         end
       end
@@ -76,8 +75,7 @@ class RedisCluster
         try -= 1
         begin
           client = create_client(seeds[try])
-        rescue StandardError => e
-          logger&.error(e)
+        rescue StandardError
         end
       end
 

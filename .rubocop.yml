@@ -1,6 +1,9 @@
 AllCops:
   TargetRubyVersion: 2.3
 
+Lint/HandleExceptions:
+  Enabled: false
+
 Metrics/LineLength:
   Max: 100
 
@@ -33,3 +36,6 @@ Style/EmptyLinesAroundModuleBody:
 
 Style/EmptyLinesAroundClassBody:
   Enabled: false
+
+Style/SpaceBeforeBlockBraces:
+  EnforcedStyle: no_space
