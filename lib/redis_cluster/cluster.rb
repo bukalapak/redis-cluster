@@ -49,13 +49,13 @@ class RedisCluster
     end
 
     def [](url)
-      clients[url]
+      clients[url] ||= create_client(url)
     end
 
     private
 
     def slots_and_clients(client)
-      client.call([:cluster, :slots]) do |result|
+      client.call([:cluster, :slots]).tap do |result|
         result.each do |from, to, server|
           url = "#{server[0]}:#{server[1]}"
           clients[url] ||= create_client(url)

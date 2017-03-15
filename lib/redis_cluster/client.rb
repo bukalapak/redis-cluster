@@ -14,9 +14,9 @@ class RedisCluster
       @url = "#{client.host}:#{client.port}"
     end
 
-    def call(command, &block)
+    def call(command)
       push(command)
-      commit(&block)
+      commit.last
     end
 
     def push(command)
@@ -34,8 +34,7 @@ class RedisCluster
       end
       @queue = []
 
-      reply = result.size > 1 ? result : result.first
-      block_given? ? yield(reply) : reply
+      return result
     end
   end
 end
