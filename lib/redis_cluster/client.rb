@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class RedisCluster
+
+  # Client is a decorator object for Redis::Client. It add queue to support pipelining and another
+  # useful addition
   class Client
     attr_reader :client, :queue, :url
 
@@ -30,7 +33,7 @@ class RedisCluster
       end
       @queue = []
 
-      return result.size > 1 ? result : result.first
+      result.size > 1 ? result : result.first
     end
   end
 end

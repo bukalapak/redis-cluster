@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 source 'https://rubygems.org'
 
 gemspec
@@ -7,6 +8,7 @@ def ruby_version?(constraint)
 end
 
 group :test do
+  gem 'rubocop'
   gem 'coveralls'
   gem 'simplecov'
   gem 'rake'
