@@ -4,6 +4,7 @@ require 'redis'
 
 require_relative 'redis_cluster/cluster'
 require_relative 'redis_cluster/client'
+require_relative 'redis_cluster/future'
 
 # RedisCluster is a client for redis-cluster *huh*
 class RedisCluster
@@ -28,13 +29,14 @@ class RedisCluster
   end
 
   def call(opts)
+    opts[:transformation] ||= NOOP
     pipeline? ? call_pipeline(opts) : call_immediately(opts)
   end
 
   def pipelined
     safely do
       begin
-        @pipeline = []
+        @pipeline = Hash.new{ |h, k| h[k] = [] }
         yield
 
         try = 3
@@ -43,7 +45,7 @@ class RedisCluster
           @pipeline = do_pipelined(@pipeline)
         end
 
-        @pipeline.first[1].value unless @pipeline.empty?
+        @pipeline.values[0][0].value unless @pipeline.empty?
       ensure
         @pipeline = nil
       end
@@ -52,6 +54,8 @@ class RedisCluster
 
   private
 
+  NOOP = ->(v){ v }
+
   def safely
     synchronize{ yield } if block_given?
   rescue StandardError => e
@@ -59,84 +63,85 @@ class RedisCluster
     raise e unless silent?
   end
 
-  def call_immediately(key:, command:, transformation: nil)
+  def call_immediately(key:, command:, transformation:)
     safely do
       client = cluster.client_for(key)
       try = 3
       asking = false
-      begin
+      reply = nil
+
+      while try.positive?
         try -= 1
 
         client.push([:asking]) if asking
-        client.push(command)
-        asking = false
+        reply = client.call(command)
 
-        reply = client.commit.last
-        raise reply if reply.is_a?(Redis::CommandError)
+        err, url = scan_reply(reply)
+        return transformation.call(reply) unless err
 
-        transformation ? transformation.call(reply) : reply
-      rescue Redis::CommandError => e
-        err, _slot, url = e.to_s.split
-        raise e if err != 'MOVED' && err != 'ASK'
-
+        cluster.reset if err == :moved
+        asking = err == :asking
         client = cluster[url]
-        asking = ( err == 'ASK' )
-        cluster.reset if err == 'MOVED'
-
-        try.positive? ? retry : ( raise e )
       end
+
+      raise reply
     end
   end
 
-  def call_pipeline(key:, command:, transformation: nil)
-    client = cluster.client_for(key)
-    future = Redis::Future.new(command, transformation)
-    @pipeline << [ key, future, client.url, false ]
-
-    return future
+  def call_pipeline(key:, command:, transformation:)
+    Future.new(key, command, transformation).tap do |future|
+      @pipeline[cluster.client_for(key).url] << future
+    end
   end
 
   def do_pipelined(pipe)
-    mapping = Hash.new{ |h, k| h[k] = {} }
+    moved = false
+    leftover = Hash.new{ |h, k| h[k] = [] }
 
-    idx = 0
-    pipe.each_with_index do |arr, i|
-      _key, future, url, asking = arr
+    pipe.each do |url, futures|
+      rev_index = {}
+      idx = 0
       client = cluster[url]
 
-      if asking
-        client.push([:asking])
+      futures.each_with_index do |future, i|
+        if future.asking
+          client.push[:asking]
+          idx += 1
+        end
+
+        rev_index[idx] = i
+        client.push(future.command)
         idx += 1
       end
 
-      mapping[client.url][idx] = i
-      client.push(future._command)
-      idx += 1
-    end
+      client.commit.each_with_index do |reply, i|
+        next unless rev_index[i]
 
-    mapping.each do |url, rev_index|
-      [ cluster[url].commit ].flatten.each_with_index do |reply, i|
-        pipe[rev_index[i]].last._set(reply) if rev_index[i]
+        future = futures[rev_index[i]]
+        future.value = reply
+
+        err, url = scan_reply(reply)
+        next unless err
+
+        moved ||= err == :moved
+        future.asking = err == :asking
+        leftover[url] << future
       end
     end
 
-    moved = false
-    leftover = []
-    pipe.each do |arr|
-      key, future, _url, _asking = arr
-      begin
-        future.value
-      rescue Redis::CommandError => e
-        err, _slot, url = e.to_s.split
-        raise e if err != 'MOVED' && err != 'ASK'
-
-        moved ||= err == 'MOVED'
-        leftover << [ key, future, url, err == 'ASK' ]
-      end
-    end
     cluster.reset if moved
-
     return leftover
+  end
+
+  def scan_reply(reply)
+    if reply.is_a?(Redis::CommandError)
+      err, _slot, url = e.to_s.split
+      raise reply if err != 'MOVED' && err != 'ASK'
+
+      [err.downcase.to_sym, url]
+    elsif reply.is_a?(::RuntimeError)
+      raise reply
+    end
   end
 
   # SETTER = [

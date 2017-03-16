@@ -6,16 +6,14 @@ class RedisCluster
   # Future basically act the same way as Redis::Future with some modification
   class Future
     attr_reader :key, :command
-    attr_accessor :url
+    attr_accessor :asking
 
-    NOOP = ->(v){ v }
-
-    def initialize(key, command, url, transformation)
+    def initialize(key, command, transformation)
       @key = key
       @command = command
-      @url = url
-      @transformation = transformation || NOOP
+      @transformation = transformation
       @value = Redis::Future::FutureNotReady
+      @asking = false
     end
 
     def value(raised: true)

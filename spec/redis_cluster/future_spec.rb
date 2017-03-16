@@ -2,10 +2,9 @@
 require 'redis_cluster/future'
 
 describe RedisCluster::Future do
-  subject{ described_class.new(key, command, url, transformation) }
+  subject{ described_class.new(key, command, transformation) }
   let(:key){ 'wow' }
   let(:command){ [:exists, key] }
-  let(:url){ '127.0.0.1:7001' }
   let(:transformation){ Redis::Boolify }
 
   describe '#key' do
@@ -16,14 +15,8 @@ describe RedisCluster::Future do
     it{ expect(subject.command).to eql command }
   end
 
-  describe '#url' do
-    it{ expect(subject.url).to eql url }
-  end
-
-  describe '#url=' do
-    let(:url2){ '127.0.0.1:7002' }
-
-    it{ expect{ subject.url = url2 }.to change{ subject.url }.from(url).to(url2) }
+  describe '#asking and asking=' do
+    it{ expect{ subject.asking = true }.to change{ subject.asking }.from(false).to(true) }
   end
 
   describe '#value and #value=' do
