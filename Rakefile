@@ -4,6 +4,7 @@
 require 'bundler'
 require 'rspec/core/rake_task'
 require 'rubocop/rake_task'
+require 'pry'
 
 RuboCop::RakeTask.new
 
