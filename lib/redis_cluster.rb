@@ -4,12 +4,17 @@ require 'redis'
 require_relative 'redis_cluster/cluster'
 require_relative 'redis_cluster/client'
 require_relative 'redis_cluster/future'
+require_relative 'redis_cluster/transformation'
 
 require_relative 'redis_cluster/keys'
+require_relative 'redis_cluster/hashes'
 
 # RedisCluster is a client for redis-cluster *huh*
 class RedisCluster
   include MonitorMixin
+
+  include Keys
+  include Hashes
 
   attr_reader :cluster, :logger
 
@@ -60,8 +65,6 @@ class RedisCluster
   end
 
   private
-
-  NOOP = ->(v){ v }
 
   def safely
     synchronize{ yield } if block_given?
@@ -142,7 +145,7 @@ class RedisCluster
 
   def scan_reply(reply)
     if reply.is_a?(Redis::CommandError)
-      err, _slot, url = e.to_s.split
+      err, _slot, url = reply.to_s.split
       raise reply if err != 'MOVED' && err != 'ASK'
 
       [err.downcase.to_sym, url]
@@ -152,7 +155,6 @@ class RedisCluster
   end
 
   # SETTER = [
-  #   :hdel, :hincrby, :hincrbyfloat, :hmset, :hset, :hsetnx,                     # Hashes
   #   :linsert, :lpop, :lpush, :lpushx, :lrem, :lset, :ltrim, :rpop, :rpush,      # Lists
   #   :rpushx,
   #   :sadd, :spop, :srem,                                                        # Sets
@@ -162,7 +164,6 @@ class RedisCluster
   # ]
 
   # GETTER = [
-  #   :hexists, :hget, :hgetall, :hkeys, :hlen, :hmget, :hstrlen, :hvals, :hscan, # Hashes
   #   :lindex, :llen, :lrange,                                                    # Lists
   #   :scard, :sismembers, :smembers, :srandmember, :sscan,                       # Sets
   #   :zcard, :zcount, :zlexcount, :zrange, :zrangebylex, :zrevrangebylex,        # Sorted Sets

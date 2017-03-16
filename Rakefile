@@ -14,6 +14,10 @@ task default: [ :test, :lint ]
 task test: :spec
 task lint: :rubocop
 
+task :pry do
+  binding.pry
+end
+
 task :start do
   sh '.circleci/start.sh'
 end

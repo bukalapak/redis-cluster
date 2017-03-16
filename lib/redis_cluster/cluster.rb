@@ -20,6 +20,7 @@ class RedisCluster
     # Return Redis::Client for a given key.
     # Modified from https://github.com/antirez/redis-rb-cluster/blob/master/cluster.rb#L104-L117
     def slot_for(key)
+      key = key.to_s
       if (s = key.index('{'))
         if (e = key.index('}', s + 1)) && e != s+1
           key = key[s+1..e-1]
