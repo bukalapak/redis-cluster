@@ -8,6 +8,7 @@ require_relative 'redis_cluster/transformation'
 
 require_relative 'redis_cluster/keys'
 require_relative 'redis_cluster/hashes'
+require_relative 'redis_cluster/lists'
 
 # RedisCluster is a client for redis-cluster *huh*
 class RedisCluster
@@ -155,8 +156,6 @@ class RedisCluster
   end
 
   # SETTER = [
-  #   :linsert, :lpop, :lpush, :lpushx, :lrem, :lset, :ltrim, :rpop, :rpush,      # Lists
-  #   :rpushx,
   #   :sadd, :spop, :srem,                                                        # Sets
   #   :zadd, :zincrby, :zrem, :zremrangebylex, :zremrangebyrank,                  # Sorted Sets
   #   :zremrangebyscore,
@@ -164,7 +163,6 @@ class RedisCluster
   # ]
 
   # GETTER = [
-  #   :lindex, :llen, :lrange,                                                    # Lists
   #   :scard, :sismembers, :smembers, :srandmember, :sscan,                       # Sets
   #   :zcard, :zcount, :zlexcount, :zrange, :zrangebylex, :zrevrangebylex,        # Sorted Sets
   #   :zrangebyscore, :zrank, :zrevrange, :zrevrangebyscore, :zrevrank, :zscore,
