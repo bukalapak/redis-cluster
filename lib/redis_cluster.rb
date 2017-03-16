@@ -1,10 +1,11 @@
 # frozen_string_literal: true
-
 require 'redis'
 
 require_relative 'redis_cluster/cluster'
 require_relative 'redis_cluster/client'
 require_relative 'redis_cluster/future'
+
+require_relative 'redis_cluster/keys'
 
 # RedisCluster is a client for redis-cluster *huh*
 class RedisCluster
@@ -28,12 +29,18 @@ class RedisCluster
     !@pipeline.nil?
   end
 
-  def call(opts)
-    opts[:transformation] ||= NOOP
-    pipeline? ? call_pipeline(opts) : call_immediately(opts)
+  def call(key, command, transformation = nil)
+    transformation ||= NOOP
+    if pipeline?
+      call_pipeline(key, command, transformation)
+    else
+      call_immediately(key, command, transformation)
+    end
   end
 
   def pipelined
+    return yield if pipeline?
+
     safely do
       begin
         @pipeline = Hash.new{ |h, k| h[k] = [] }
@@ -63,7 +70,7 @@ class RedisCluster
     raise e unless silent?
   end
 
-  def call_immediately(key:, command:, transformation:)
+  def call_immediately(key, command, transformation)
     safely do
       client = cluster.client_for(key)
       try = 3
@@ -88,7 +95,7 @@ class RedisCluster
     end
   end
 
-  def call_pipeline(key:, command:, transformation:)
+  def call_pipeline(key, command, transformation)
     Future.new(key, command, transformation).tap do |future|
       @pipeline[cluster.client_for(key).url] << future
     end
@@ -145,7 +152,6 @@ class RedisCluster
   end
 
   # SETTER = [
-  #   :del, :expire,                                                              # Keys
   #   :hdel, :hincrby, :hincrbyfloat, :hmset, :hset, :hsetnx,                     # Hashes
   #   :linsert, :lpop, :lpush, :lpushx, :lrem, :lset, :ltrim, :rpop, :rpush,      # Lists
   #   :rpushx,
@@ -156,7 +162,6 @@ class RedisCluster
   # ]
 
   # GETTER = [
-  #   :exists, :ttl,                                                              # Keys
   #   :hexists, :hget, :hgetall, :hkeys, :hlen, :hmget, :hstrlen, :hvals, :hscan, # Hashes
   #   :lindex, :llen, :lrange,                                                    # Lists
   #   :scard, :sismembers, :smembers, :srandmember, :sscan,                       # Sets

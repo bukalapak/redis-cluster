@@ -4,6 +4,8 @@
 require 'simplecov'
 require 'coveralls'
 
+require_relative 'helper/fake_redis_cluster'
+
 SimpleCov.formatter =
   if ENV['CI']
     Coveralls::SimpleCov::Formatter
