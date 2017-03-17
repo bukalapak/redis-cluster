@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 require 'redis'
 
-require_relative '../transformation'
-
 class RedisCluster
   module Function
 
@@ -146,25 +144,6 @@ class RedisCluster
       # @return [Fixnum] String lenght
       def hstrlen(key, field)
         call(key, [:hstrlen, key, field])
-      end
-
-      # Scan a hash
-      #
-      # @example Retrieve the first batch of key/value pairs in a hash
-      #   redis.hscan("hash", 0)
-      #
-      # @param [String, Integer] cursor the cursor of the iteration
-      # @param [Hash] options
-      #   - `:match => String`: only return keys matching the pattern
-      #   - `:count => Integer`: return count keys at most per iteration
-      #
-      # @return [String, Array<[String, String]>] the next cursor and all found keys
-      def hscan(key, cursor, options = {})
-        args = [:hscan, key, cursor]
-        args.push('MATCH', options[:match]) if options[:match]
-        args.push('COUNT', options[:count]) if options[:count]
-
-        call(key, args, HSCAN)
       end
     end
   end

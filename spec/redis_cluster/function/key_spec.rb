@@ -66,4 +66,13 @@ describe RedisCluster::Function::Key do
       subject.type(:wow)
     end
   end
+
+  describe '#restore' do
+    let(:result){ "OK" }
+
+    it do
+      expect(subject).to receive(:call).with(:wow, [:restore, :wow, 1000, 'serialized_value']).and_return(result)
+      subject.restore(:wow, 1000, 'serialized_value')
+    end
+  end
 end

@@ -129,13 +129,4 @@ describe RedisCluster::Function::Hash do
       subject.hstrlen(:wow, :aw)
     end
   end
-
-  describe '#hscan' do
-    let(:result){ ["0", [:wew, 2, :waw, 2]] }
-
-    it do
-      expect(subject).to receive(:call).with(:wow, [:hscan, :wow, 0, 'MATCH', '*', 'COUNT', 1000], RedisCluster::HSCAN).and_return(["0", [[:wew, 2], [:waw, 2]]])
-      subject.hscan(:wow, 0, match: '*', count: 1000)
-    end
-  end
 end

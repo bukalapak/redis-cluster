@@ -4,7 +4,6 @@ require 'redis'
 require_relative 'redis_cluster/cluster'
 require_relative 'redis_cluster/client'
 require_relative 'redis_cluster/future'
-require_relative 'redis_cluster/transformation'
 require_relative 'redis_cluster/function'
 
 # RedisCluster is a client for redis-cluster *huh*
@@ -61,6 +60,8 @@ class RedisCluster
   end
 
   private
+
+  NOOP = ->(v){ v }
 
   def safely
     synchronize{ yield } if block_given?

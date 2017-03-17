@@ -8,7 +8,7 @@ class RedisCluster
     # see https://redis.io/commands#generic. Most of the code are copied from
     # https://github.com/redis/redis-rb/blob/master/lib/redis.rb.
     #
-    # SETTER = [:del, :expire, :pexpire]
+    # SETTER = [:del, :expire, :pexpire, :restore]
     # GETTER = [:exists, :ttl, :pttl, :type]
     module Key
 
@@ -78,6 +78,21 @@ class RedisCluster
       # @return [String] `string`, `list`, `set`, `zset`, `hash` or `none`
       def type(key)
         call(key, [:type, key])
+      end
+
+      # Create a key using the serialized value, previously obtained using DUMP.
+      #
+      # @param [String] key
+      # @param [String] ttl
+      # @param [String] serialized_value
+      # @param [Hash] options
+      #   - `replace: true`: replace existing key
+      # @return [String] `"OK"`
+      def restore(key, ttl, serialized_value, option = {})
+        args = [:restore, key, ttl, serialized_value]
+        args << 'REPLACE' if option[:replace]
+
+        call(key, args)
       end
     end
   end
