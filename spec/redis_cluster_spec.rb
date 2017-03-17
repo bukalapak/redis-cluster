@@ -23,6 +23,10 @@ describe RedisCluster do
     end
   end
 
+  describe '#connected?' do
+    it{ is_expected.not_to be_connected }
+  end
+
   describe '#call & #pipelined' do
     it do
       expect do

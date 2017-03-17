@@ -25,6 +25,10 @@ class RedisCluster
     @silent
   end
 
+  def connected?
+    cluster.connected?
+  end
+
   def pipeline?
     !@pipeline.nil?
   end

@@ -33,6 +33,10 @@ class RedisCluster
       slots[slot_for(key)]
     end
 
+    def connected?
+      clients.values.all?(&:connected?)
+    end
+
     def random
       clients.values.sample
     end

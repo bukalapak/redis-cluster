@@ -14,6 +14,10 @@ class RedisCluster
       @url = "#{client.host}:#{client.port}"
     end
 
+    def connected?
+      client.connected?
+    end
+
     def call(command)
       push(command)
       commit.last
