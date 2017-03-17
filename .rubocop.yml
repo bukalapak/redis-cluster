@@ -49,3 +49,6 @@ Style/EmptyLinesAroundClassBody:
 
 Style/SpaceBeforeBlockBraces:
   EnforcedStyle: no_space
+
+Style/FileName:
+  Enabled: false

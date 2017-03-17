@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'redis_cluster'
+require 'redis-cluster'
 
 describe RedisCluster do
   subject{ described_class.new(seed) }
