@@ -9,7 +9,7 @@ class RedisCluster
     # https://github.com/redis/redis-rb/blob/master/lib/redis.rb.
     #
     # SETTER = [:del, :expire, :pexpire]
-    # GETTER = [:exists, :ttl, :pttl]
+    # GETTER = [:exists, :ttl, :pttl, :type]
     module Key
 
       # Delete one key.
@@ -70,6 +70,14 @@ class RedisCluster
       #     - The command returns -1 if the key exists but has no associated expire.
       def pttl(key)
         call(key, [:pttl, key])
+      end
+
+      # Determine the type stored at key.
+      #
+      # @param [String] key
+      # @return [String] `string`, `list`, `set`, `zset`, `hash` or `none`
+      def type(key)
+        call(key, [:type, key])
       end
     end
   end

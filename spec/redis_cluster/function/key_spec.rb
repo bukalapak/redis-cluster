@@ -57,4 +57,13 @@ describe RedisCluster::Function::Key do
       subject.pttl(:wow)
     end
   end
+
+  describe '#type' do
+    let(:result){ "string" }
+
+    it do
+      expect(subject).to receive(:call).with(:wow, [:type, :wow]).and_return(result)
+      subject.type(:wow)
+    end
+  end
 end

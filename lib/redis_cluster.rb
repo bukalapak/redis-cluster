@@ -153,13 +153,11 @@ class RedisCluster
   # SETTER = [
   #   :zadd, :zincrby, :zrem, :zremrangebylex, :zremrangebyrank,                  # Sorted Sets
   #   :zremrangebyscore,
-  #   :append, :decr, :decrby, :incr, :incrby, :incrbyfloat, :set, :setex, :setnx # Strings
   # ]
 
   # GETTER = [
   #   :zcard, :zcount, :zlexcount, :zrange, :zrangebylex, :zrevrangebylex,        # Sorted Sets
   #   :zrangebyscore, :zrank, :zrevrange, :zrevrangebyscore, :zrevrank, :zscore,
   #   :zscan,
-  #   :get, :strlen                                                               # Strings
   # ]
 end

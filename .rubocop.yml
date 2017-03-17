@@ -2,7 +2,7 @@ AllCops:
   TargetRubyVersion: 2.3
   Exclude:
     - Rakefile
-    - vendor/**/*.rb
+    - vendor/**/*
     - spec/**/*.rb
 
 Lint/HandleExceptions:
