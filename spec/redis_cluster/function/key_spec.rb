@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'redis_cluster/keys'
+require 'redis_cluster/function/key'
 
-describe RedisCluster::Keys do
+describe RedisCluster::Function::Key do
   subject{ FakeRedisCluster.new(result).tap{ |o| o.extend described_class } }
 
   describe '#del' do

@@ -5,17 +5,12 @@ require_relative 'redis_cluster/cluster'
 require_relative 'redis_cluster/client'
 require_relative 'redis_cluster/future'
 require_relative 'redis_cluster/transformation'
-
-require_relative 'redis_cluster/keys'
-require_relative 'redis_cluster/hashes'
-require_relative 'redis_cluster/lists'
+require_relative 'redis_cluster/function'
 
 # RedisCluster is a client for redis-cluster *huh*
 class RedisCluster
   include MonitorMixin
-
-  include Keys
-  include Hashes
+  include Function
 
   attr_reader :cluster, :logger
 
@@ -49,7 +44,7 @@ class RedisCluster
 
     safely do
       begin
-        @pipeline = Hash.new{ |h, k| h[k] = [] }
+        @pipeline = ::Hash.new{ |h, k| h[k] = [] }
         yield
 
         try = 3
@@ -107,7 +102,7 @@ class RedisCluster
 
   def do_pipelined(pipe)
     moved = false
-    leftover = Hash.new{ |h, k| h[k] = [] }
+    leftover = ::Hash.new{ |h, k| h[k] = [] }
 
     pipe.each do |url, futures|
       rev_index = {}
@@ -156,14 +151,12 @@ class RedisCluster
   end
 
   # SETTER = [
-  #   :sadd, :spop, :srem,                                                        # Sets
   #   :zadd, :zincrby, :zrem, :zremrangebylex, :zremrangebyrank,                  # Sorted Sets
   #   :zremrangebyscore,
   #   :append, :decr, :decrby, :incr, :incrby, :incrbyfloat, :set, :setex, :setnx # Strings
   # ]
 
   # GETTER = [
-  #   :scard, :sismembers, :smembers, :srandmember, :sscan,                       # Sets
   #   :zcard, :zcount, :zlexcount, :zrange, :zrangebylex, :zrevrangebylex,        # Sorted Sets
   #   :zrangebyscore, :zrank, :zrevrange, :zrevrangebyscore, :zrevrank, :zscore,
   #   :zscan,

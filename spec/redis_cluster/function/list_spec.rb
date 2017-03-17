@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'redis_cluster/lists'
+require 'redis_cluster/function/list'
 
-describe RedisCluster::Lists do
+describe RedisCluster::Function::List do
   subject{ FakeRedisCluster.new(result).tap{ |o| o.extend described_class } }
 
   describe '#llen' do

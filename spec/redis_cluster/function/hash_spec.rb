@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'redis_cluster/hashes'
+require 'redis_cluster/function/hash'
 
-describe RedisCluster::Hashes do
+describe RedisCluster::Function::Hash do
   subject{ FakeRedisCluster.new(result).tap{ |o| o.extend described_class } }
 
   describe '#hdel' do
