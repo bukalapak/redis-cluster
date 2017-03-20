@@ -18,6 +18,10 @@ class RedisCluster
       client.connected?
     end
 
+    def close
+      client.disconnect
+    end
+
     def call(command)
       push(command)
       commit.last

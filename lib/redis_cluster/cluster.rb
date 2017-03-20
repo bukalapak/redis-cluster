@@ -5,14 +5,15 @@ class RedisCluster
 
   # Cluster implement redis cluster logic for client.
   class Cluster
-    attr_reader :option, :slots, :clients
+    attr_reader :options, :slots, :clients, :replicas
 
     HASH_SLOTS = 16_384
 
-    def initialize(seeds, option = {})
-      @option = option
+    def initialize(seeds, options = {})
+      @options = options
       @slots = []
-      @clients = {}
+      @replicas = nil
+      @clients = nil
 
       slots_and_clients(seed_client(seeds))
     end
@@ -29,23 +30,31 @@ class RedisCluster
       crc16(key) % HASH_SLOTS
     end
 
-    def client_for(key)
-      slots[slot_for(key)]
+    def master(slot)
+      slots[slot].first
+    end
+
+    def slave(slot)
+      slots[slot][1..-1].sample
+    end
+
+    def master_slave(slot)
+      slots[slot].sample
     end
 
     def connected?
       clients.values.all?(&:connected?)
     end
 
-    def random
-      clients.values.sample
+    def random_client
+      clients.random
     end
 
     def reset
       try = 3
       begin
         try -= 1
-        client = random
+        client = random_client
         slots_and_clients(client)
       rescue StandardError => e
         clients.delete(client.url)
@@ -54,22 +63,27 @@ class RedisCluster
     end
 
     def [](url)
-      clients[url] ||= create_client(url)
+      cleint[url] ||= create_client(url)
     end
 
     private
 
     def slots_and_clients(client)
-      client.call([:cluster, :slots]).tap do |result|
-        result.each do |from, to, server|
-          url = "#{server[0]}:#{server[1]}"
-          clients[url] ||= create_client(url)
+      replicas = ::Hash.new{ |h, k| h[k] = [] }
 
-          (from..to).each do |slot|
-            slots[slot] = clients[url]
+      client.call([:cluster, :slots]).tap do |result|
+        result.each do |arr|
+          arr[2..-1].each do |host, port|
+            replicas[arr[0]] << self["#{host}:#{port}"]
+          end
+
+          (arr[0]..arr[1]).each do |slot|
+            slots[slot] = replicas[arr[0]]
           end
         end
       end
+
+      @replicas = replicas
     end
 
     def seed_client(seeds)
@@ -89,7 +103,7 @@ class RedisCluster
 
     def create_client(url)
       host, port = url.split(':', 2)
-      Client.new(option.merge(host: host, port: port))
+      Client.new(options.merge(host: host, port: port))
     end
 
     # -----------------------------------------------------------------------------

@@ -11,34 +11,47 @@ class RedisCluster
   include MonitorMixin
   include Function
 
-  attr_reader :cluster, :logger
+  attr_reader :cluster, :options
 
-  def initialize(seeds, redis_opts: {}, logger: nil, silent: false)
+  def initialize(seeds, redis_opts: {}, cluster_opts: {})
     @cluster = Cluster.new(seeds, redis_opts)
     @logger = logger
     @silent = silent
+    @options = cluster_opts
 
     super()
   end
 
+  def logger
+    options[:logger]
+  end
+
   def silent?
-    @silent
+    options[:silent]
+  end
+
+  def read_mode
+    options[:read_mode] || :master
   end
 
   def connected?
     cluster.connected?
   end
 
+  def close
+    safely{ cluster.close }
+  end
+
   def pipeline?
     !@pipeline.nil?
   end
 
-  def call(key, command, transformation = nil)
-    transformation ||= NOOP
+  def call(key, command, opts)
+    opts[:transform] ||= NOOP
     if pipeline?
-      call_pipeline(key, command, transformation)
+      call_pipeline(key, command, opts)
     else
-      call_immediately(key, command, transformation)
+      call_immediately(key, command, opts)
     end
   end
 
@@ -47,16 +60,27 @@ class RedisCluster
 
     safely do
       begin
-        @pipeline = ::Hash.new{ |h, k| h[k] = [] }
+        @pipeline = []
         yield
 
         try = 3
         while !@pipeline.empty? && try.positive?
           try -= 1
-          @pipeline = do_pipelined(@pipeline)
+          moved = false
+          mapped_future = map_pipeline(@pipeline)
+
+          @pipeline = []
+          mapped_future.each do |url, futures|
+            leftover, move = do_pipelined(url, futures)
+            moved ||= move
+
+            pipeline.concat(leftover)
+          end
+
+          cluster.reset if moved
         end
 
-        @pipeline.values[0][0].value unless @pipeline.empty?
+        @pipeline.first.value unless @pipeline.empty?
       ensure
         @pipeline = nil
       end
@@ -74,74 +98,95 @@ class RedisCluster
     raise e unless silent?
   end
 
-  def call_immediately(key, command, transformation)
+  def call_immediately(key, command, opts)
     safely do
-      client = cluster.client_for(key)
       try = 3
       asking = false
       reply = nil
+      slot = cluster.slot_for(key)
+      mode = opts[:read] ? read_mode : :master
+      client = cluster.public_send(mode, slot)
 
       while try.positive?
-        try -= 1
+        begin
+          try -= 1
 
-        client.push([:asking]) if asking
-        reply = client.call(command)
+          client.push([:asking]) if asking
+          reply = client.call(command)
 
-        err, url = scan_reply(reply)
-        return transformation.call(reply) unless err
+          err, url = scan_reply(reply)
+          return opts[:transform].call(reply) unless err
 
-        cluster.reset if err == :moved
-        asking = err == :asking
-        client = cluster[url]
+          cluster.reset if err == :moved
+          asking = err == :asking
+          client = cluster[url]
+        rescue Errno::ECONNREFUSED
+          asking = false
+          cluster.reset
+          client = cluster.public_send(mode, slot)
+        end
       end
 
       raise reply
     end
   end
 
-  def call_pipeline(key, command, transformation)
-    Future.new(key, command, transformation).tap do |future|
-      @pipeline[cluster.client_for(key).url] << future
+  def call_pipeline(key, command, opts)
+    Future.new(cluster.slot_for(key), command, opts[:transform]).tap do |future|
+      @pipeline << future
     end
   end
 
-  def do_pipelined(pipe)
+  def map_pipeline(pipe)
+    futures = ::Hash.new{ |h, k| h[k] = [] }
+    pipe.each do |future|
+      url = future.url || cluster.master(future.slot).url
+      futures[url] << future
+    end
+
+    return futures
+  end
+
+  def do_pipelined(url, futures)
     moved = false
-    leftover = ::Hash.new{ |h, k| h[k] = [] }
+    leftover = []
 
-    pipe.each do |url, futures|
-      rev_index = {}
-      idx = 0
-      client = cluster[url]
+    rev_index = {}
+    idx = 0
+    client = cluster[url]
 
-      futures.each_with_index do |future, i|
-        if future.asking
-          client.push[:asking]
-          idx += 1
-        end
-
-        rev_index[idx] = i
-        client.push(future.command)
+    futures.each_with_index do |future, i|
+      if future.asking
+        client.push[:asking]
         idx += 1
       end
 
-      client.commit.each_with_index do |reply, i|
-        next unless rev_index[i]
-
-        future = futures[rev_index[i]]
-        future.value = reply
-
-        err, url = scan_reply(reply)
-        next unless err
-
-        moved ||= err == :moved
-        future.asking = err == :asking
-        leftover[url] << future
-      end
+      rev_index[idx] = i
+      client.push(future.command)
+      idx += 1
     end
 
-    cluster.reset if moved
-    return leftover
+    client.commit.each_with_index do |reply, i|
+      next unless rev_index[i]
+
+      future = futures[rev_index[i]]
+      future.value = reply
+
+      err, url = scan_reply(reply)
+      next unless err
+
+      moved ||= err == :moved
+      future.asking = err == :asking
+      future.url = url
+      leftover << future
+    end
+
+    return [leftover, moved]
+  rescue Errno::ECONNREFUSED
+    # reset url and asking when connection refused
+    futures.each{ |f| f.url = nil; f.asking = false }
+
+    return [futures, true]
   end
 
   def scan_reply(reply)

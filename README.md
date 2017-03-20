@@ -11,7 +11,7 @@ gem install 'redis-cluster'
 This will start a redis from seed servers. Currently it only support master read configuration.
 ````ruby
 seed = ['127.0.0.1:7001', '127.0.0.1:7002']
-redis = RedisCluster.new(seed, redis_opts: { timeout: 5, connect_timeout: 1})
+redis = RedisCluster.new(seed, redis_opts: { timeout: 5, connect_timeout: 1 }, cluster_opts: { read_mode: :master_slave  )
 ````
 
 ## Limitation

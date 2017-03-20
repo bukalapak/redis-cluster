@@ -5,19 +5,19 @@ class RedisCluster
 
   # Future basically act the same way as Redis::Future with some modification
   class Future
-    attr_reader :key, :command
-    attr_accessor :asking
+    attr_reader :command, :slot
+    attr_accessor :asking, :url
 
-    def initialize(key, command, transformation)
-      @key = key
+    def initialize(slot, command, transformation)
+      @slot = slot
       @command = command
       @transformation = transformation
       @value = Redis::Future::FutureNotReady
       @asking = false
     end
 
-    def value(raised: true)
-      raise @value if raised && @value.is_a?(::RuntimeError)
+    def value
+      raise @value if @value.is_a?(::RuntimeError)
       @value
     end
 
