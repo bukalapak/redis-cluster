@@ -52,3 +52,6 @@ Style/SpaceBeforeBlockBraces:
 
 Style/FileName:
   Enabled: false
+
+Style/Semicolon:
+  AllowAsExpressionSeparator: true

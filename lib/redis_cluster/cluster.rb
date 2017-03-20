@@ -12,8 +12,8 @@ class RedisCluster
     def initialize(seeds, options = {})
       @options = options
       @slots = []
+      @clients = {}
       @replicas = nil
-      @clients = nil
 
       slots_and_clients(seed_client(seeds))
     end
@@ -42,19 +42,23 @@ class RedisCluster
       slots[slot].sample
     end
 
+    def close
+      clients.values.each(&:close)
+    end
+
     def connected?
       clients.values.all?(&:connected?)
     end
 
-    def random_client
-      clients.random
+    def random
+      clients.values.sample
     end
 
     def reset
       try = 3
       begin
         try -= 1
-        client = random_client
+        client = random
         slots_and_clients(client)
       rescue StandardError => e
         clients.delete(client.url)
@@ -63,7 +67,7 @@ class RedisCluster
     end
 
     def [](url)
-      cleint[url] ||= create_client(url)
+      clients[url] ||= create_client(url)
     end
 
     private
@@ -73,8 +77,10 @@ class RedisCluster
 
       client.call([:cluster, :slots]).tap do |result|
         result.each do |arr|
-          arr[2..-1].each do |host, port|
-            replicas[arr[0]] << self["#{host}:#{port}"]
+          arr[2..-1].each_with_index do |a, i|
+            cli = self["#{a[0]}:#{a[1]}"]
+            replicas[arr[0]] << cli
+            cli.call([:readonly]) if i.nonzero?
           end
 
           (arr[0]..arr[1]).each do |slot|

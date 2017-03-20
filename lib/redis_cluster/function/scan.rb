@@ -26,7 +26,7 @@ class RedisCluster
         args.push('MATCH', options[:match]) if options[:match]
         args.push('COUNT', options[:count]) if options[:count]
 
-        call(key, args, ZSCAN)
+        call(key, args, transform: ZSCAN, read: true)
       end
 
       # Scan a hash

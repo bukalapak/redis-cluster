@@ -13,11 +13,9 @@ class RedisCluster
 
   attr_reader :cluster, :options
 
-  def initialize(seeds, redis_opts: {}, cluster_opts: {})
-    @cluster = Cluster.new(seeds, redis_opts)
-    @logger = logger
-    @silent = silent
-    @options = cluster_opts
+  def initialize(seeds, redis_opts: nil, cluster_opts: nil)
+    @options = cluster_opts || {}
+    @cluster = Cluster.new(seeds, redis_opts || {})
 
     super()
   end
@@ -46,7 +44,7 @@ class RedisCluster
     !@pipeline.nil?
   end
 
-  def call(key, command, opts)
+  def call(key, command, opts = {})
     opts[:transform] ||= NOOP
     if pipeline?
       call_pipeline(key, command, opts)
@@ -74,7 +72,7 @@ class RedisCluster
             leftover, move = do_pipelined(url, futures)
             moved ||= move
 
-            pipeline.concat(leftover)
+            @pipeline.concat(leftover)
           end
 
           cluster.reset if moved

@@ -4,7 +4,15 @@ require 'pry'
 
 describe RedisCluster::Cluster do
   subject{ described_class.new(['127.0.0.1:7001']) }
-  let(:all_redis){ ['127.0.0.1:7001', '127.0.0.1:7002', '127.0.0.1:7003'] }
+  let(:all_redis) do
+    all = []
+    mapping = subject.random.call([:cluster, :slots])
+    mapping.map do |arr|
+      all.concat(arr[2..-1].map{ |h, p| "#{h}:#{p}" })
+    end
+
+    return all
+  end
 
   describe '#random' do
     it{ expect(all_redis).to be_include(subject.random.url) }
@@ -16,10 +24,11 @@ describe RedisCluster::Cluster do
     end
 
     it 'can retry 3 times' do
+      old_count = subject.clients.count
       allow(subject).to receive(:slots_and_clients).and_raise(StandardError)
 
       expect{ subject.reset }.to raise_error(StandardError)
-      expect(subject.clients.count).to eql 0
+      expect(subject.clients.count).to eql (old_count - 3)
     end
   end
 
@@ -39,14 +48,18 @@ describe RedisCluster::Cluster do
     end
   end
 
-  describe '#client_for' do
+  describe '#master/master_slave/slave_for' do
     let(:expected_url) do
       mapping = subject.random.call([:cluster, :slots])
-      mapping.each do |from, to, server|
-        return "#{server[0]}:#{server[1]}" if (from..to).cover?(2300)
+      mapping.each do |arr|
+        return arr[2..-1].map{ |h, p| "#{h}:#{p}" } if (arr[0]..arr[1]).cover?(2300)
       end
     end
 
-    it{ expect(subject.client_for('coba{wow}aja').url).to eql expected_url }
+    it do
+      expect(subject.master(2300).url).to eql expected_url.first
+      expect(expected_url[1..-1].include? subject.slave(2300).url).to be_truthy
+      expect(expected_url.include? subject.master_slave(2300).url).to be_truthy
+    end
   end
 end

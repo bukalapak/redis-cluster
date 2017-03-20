@@ -2,7 +2,7 @@
 require 'redis-cluster'
 
 describe RedisCluster do
-  subject{ described_class.new(seed) }
+  subject{ described_class.new(seed, cluster_opts: { read_mode: :slave }) }
   let(:seed){ [ '127.0.0.1:7001' ] }
 
   describe '#silent?' do
@@ -23,6 +23,10 @@ describe RedisCluster do
     end
   end
 
+  describe '#close' do
+    it{  expect{ subject.close }.not_to raise_error }
+  end
+
   describe '#connected?' do
     it{ is_expected.not_to be_connected }
   end
@@ -35,6 +39,12 @@ describe RedisCluster do
         subject.call('wiw', [:set, 'wiw', 'wiw'])
         subject.call('wow', [:set, 'wow', 'wow'])
         subject.call('wuw', [:set, 'wuw', 'wuw'])
+
+        subject.call('waw', [:get, 'waw'], read: true)
+        subject.call('wew', [:get, 'wew'], read: true)
+        subject.call('wiw', [:get, 'wiw'], read: true)
+        subject.call('wow', [:get, 'wow'], read: true)
+        subject.call('wuw', [:get, 'wuw'], read: true)
       end.not_to raise_error
 
       a, e, i, o, u = nil
