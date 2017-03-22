@@ -9,7 +9,7 @@ end
 
 group :test do
   gem 'rubocop'
-  gem 'coveralls'
+  gem 'codecov'
   gem 'simplecov'
   gem 'rake'
   gem 'rspec'

@@ -2,14 +2,14 @@
 # encoding: UTF-8
 
 require 'simplecov'
-require 'coveralls'
+require 'codecov'
 
 require_relative 'helper/fake_redis_cluster'
 require_relative 'helper/shared_example_function'
 
 SimpleCov.formatter =
   if ENV['CI']
-    Coveralls::SimpleCov::Formatter
+    SimpleCov::Formatter::Codecov
   else
     SimpleCov::Formatter::HTMLFormatter
   end

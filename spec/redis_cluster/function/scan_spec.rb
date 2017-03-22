@@ -22,14 +22,14 @@ describe RedisCluster::Function::Scan do
       args:          ->{ [key, 0, match: '*', count: 1000] },
       redis_command: ->{ [method, key, 0, 'MATCH', '*', 'COUNT', 1000] },
       redis_result:  ->{ ['0', ['wew', 2, 'waw', 2]] },
-      transform:     ->{ RedisCluster::HSCAN },
+      transform:     ->{ RedisCluster::Function::Scan::HSCAN },
       read:          ->{ true }
     }, {
       method:        ->{ :zscan },
       args:          ->{ [key, 0, match: '*', count: 1000] },
       redis_command: ->{ [method, key, 0, 'MATCH', '*', 'COUNT', 1000] },
       redis_result:  ->{ ['0', ['wew', '2.2', 'waw', '3.3']] },
-      transform:     ->{ RedisCluster::ZSCAN },
+      transform:     ->{ RedisCluster::Function::Scan::ZSCAN },
       read:          ->{ true }
     }, {
       method:        ->{ :sscan },

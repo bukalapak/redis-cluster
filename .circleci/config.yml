@@ -23,5 +23,9 @@ jobs:
           paths: [/bin/redis-server]
           key: "redis-3.2.8"
 
-      - run: rake
+      - run: mkdir .circleci/tmp
+      - run: rake start
+
+      - run: rake test
+      - run: rake lint
 

@@ -3,7 +3,7 @@
 for port in 7001 7002 7003 7004 7005 7006
 do
   sed "s/{{port}}/${port}/g" .circleci/redis.conf > .circleci/tmp/${port}.conf
-  redis-server .circleci/tmp/${port}.conf &
+  redis-server .circleci/tmp/${port}.conf > /dev/null 2>&1 &
   echo $! >> .circleci/tmp/pid
 done
 sleep 3

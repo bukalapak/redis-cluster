@@ -118,7 +118,6 @@ describe RedisCluster do
     end
 
     context 'server down' do
-
       def safely
         yield
       rescue Redis::CannotConnectError
