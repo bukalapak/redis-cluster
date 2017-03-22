@@ -35,7 +35,7 @@ class RedisCluster
     end
 
     def slave(slot)
-      slots[slot][1..-1].sample
+      slots[slot][1..-1].sample || slots[slot].first
     end
 
     def master_slave(slot)

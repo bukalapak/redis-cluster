@@ -44,12 +44,14 @@ class RedisCluster
     !@pipeline.nil?
   end
 
-  def call(key, command, opts = {})
+  def call(keys, command, opts = {})
     opts[:transform] ||= NOOP
+    slot = slot_for([ keys ].flatten )
+
     if pipeline?
-      call_pipeline(key, command, opts)
+      call_pipeline(slot, command, opts)
     else
-      call_immediately(key, command, opts)
+      call_immediately(slot, command, opts)
     end
   end
 
@@ -88,6 +90,7 @@ class RedisCluster
   private
 
   NOOP = ->(v){ v }
+  CROSSSLOT_ERROR = Redis::CommandError.new("CROSSSLOT Keys in request don't hash to the same slot")
 
   def safely
     synchronize{ yield } if block_given?
@@ -96,13 +99,17 @@ class RedisCluster
     raise e unless silent?
   end
 
-  def call_immediately(key, command, opts)
+  def slot_for(keys)
+    slot = keys.map{ |k| cluster.slot_for(k) }.uniq
+    slot.size == 1 ? slot.first : ( raise CROSSSLOT_ERROR )
+  end
+
+  def call_immediately(slot, command, transform:, read: false)
     safely do
       try = 3
       asking = false
       reply = nil
-      slot = cluster.slot_for(key)
-      mode = opts[:read] ? read_mode : :master
+      mode = read ? read_mode : :master
       client = cluster.public_send(mode, slot)
 
       while try.positive?
@@ -113,15 +120,16 @@ class RedisCluster
           reply = client.call(command)
 
           err, url = scan_reply(reply)
-          return opts[:transform].call(reply) unless err
+          return transform.call(reply) unless err
 
           cluster.reset if err == :moved
-          asking = err == :asking
+          asking = err == :ask
           client = cluster[url]
-        rescue Errno::ECONNREFUSED
+        rescue Redis::CannotConnectError => e
           asking = false
           cluster.reset
           client = cluster.public_send(mode, slot)
+          reply = e
         end
       end
 
@@ -129,8 +137,8 @@ class RedisCluster
     end
   end
 
-  def call_pipeline(key, command, opts)
-    Future.new(cluster.slot_for(key), command, opts[:transform]).tap do |future|
+  def call_pipeline(slot, command, opts)
+    Future.new(slot, command, opts[:transform]).tap do |future|
       @pipeline << future
     end
   end
@@ -155,7 +163,7 @@ class RedisCluster
 
     futures.each_with_index do |future, i|
       if future.asking
-        client.push[:asking]
+        client.push([:asking])
         idx += 1
       end
 
@@ -174,13 +182,13 @@ class RedisCluster
       next unless err
 
       moved ||= err == :moved
-      future.asking = err == :asking
+      future.asking = err == :ask
       future.url = url
       leftover << future
     end
 
     return [leftover, moved]
-  rescue Errno::ECONNREFUSED
+  rescue Redis::CannotConnectError
     # reset url and asking when connection refused
     futures.each{ |f| f.url = nil; f.asking = false }
 
@@ -197,15 +205,4 @@ class RedisCluster
       raise reply
     end
   end
-
-  # SETTER = [
-  #   :zadd, :zincrby, :zrem, :zremrangebylex, :zremrangebyrank,                  # Sorted Sets
-  #   :zremrangebyscore,
-  # ]
-
-  # GETTER = [
-  #   :zcard, :zcount, :zlexcount, :zrange, :zrangebylex, :zrevrangebylex,        # Sorted Sets
-  #   :zrangebyscore, :zrank, :zrevrange, :zrevrangebyscore, :zrevrank, :zscore,
-  #   :zscan,
-  # ]
 end

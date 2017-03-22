@@ -9,7 +9,7 @@ require 'pry'
 RuboCop::RakeTask.new
 
 desc 'Default: run specs'
-task default: [ :test, :lint ]
+task default: [ :start, :test, :lint, :stop ]
 
 task test: :spec
 task lint: :rubocop

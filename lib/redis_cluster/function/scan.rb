@@ -45,7 +45,26 @@ class RedisCluster
         args.push('MATCH', options[:match]) if options[:match]
         args.push('COUNT', options[:count]) if options[:count]
 
-        call(key, args, HSCAN)
+        call(key, args, transform: HSCAN, read: true)
+      end
+
+      # Scan a set
+      #
+      # @example Retrieve the first batch of keys in a set
+      #   redis.sscan("set", 0)
+      #
+      # @param [String, Integer] cursor the cursor of the iteration
+      # @param [Hash] options
+      #   - `:match => String`: only return keys matching the pattern
+      #   - `:count => Integer`: return count keys at most per iteration
+      #
+      # @return [String, Array<String>] the next cursor and all found members
+      def sscan(key, cursor, options = {})
+        args = [:sscan, key, cursor]
+        args.push('MATCH', options[:match]) if options[:match]
+        args.push('COUNT', options[:count]) if options[:count]
+
+        call(key, args, read: true)
       end
 
       # Convenient method for iterating a hash or sorted_set.
@@ -54,7 +73,7 @@ class RedisCluster
       # @param [Hash] options
       #   - `:match => String`: only return keys matching the pattern
       #   - `:count => Integer`: return count keys at most per iteration
-      [:zscan, :hscan].each do |method|
+      [:zscan, :hscan, :sscan].each do |method|
         define_method "#{method}_each" do |key, options = {}, &block|
           return if block.nil?
 

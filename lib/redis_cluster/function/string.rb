@@ -73,7 +73,7 @@ class RedisCluster
       # @param [Float] increment
       # @return [Float] value after incrementing it
       def incrbyfloat(key, increment)
-        call(key, [:incrbyfloat, key, increment], Redis::Floatify)
+        call(key, [:incrbyfloat, key, increment], transform: Redis::Floatify)
       end
 
       # Set the string value of a key.
@@ -96,7 +96,7 @@ class RedisCluster
         args.concat(['NX']) if options[:nx]
         args.concat(['XX']) if options[:xx]
 
-        call(key, args, Redis::BoolifySet)
+        call(key, args, transform: Redis::BoolifySet)
       end
 
       # Set the time to live in seconds of a key.
@@ -125,7 +125,7 @@ class RedisCluster
       # @param [String] value
       # @return [Boolean] whether the key was set or not
       def setnx(key, value)
-        call(key, [:setnx, key, value.to_s], Redis::Boolify)
+        call(key, [:setnx, key, value.to_s], transform: Redis::Boolify)
       end
 
       # Get the value of a key.
@@ -133,7 +133,7 @@ class RedisCluster
       # @param [String] key
       # @return [String]
       def get(key)
-        call(key, [:get, key])
+        call(key, [:get, key], read: true)
       end
 
       # Overwrite part of a string at key starting at the specified offset.
@@ -154,7 +154,7 @@ class RedisCluster
       #   the end of the string
       # @return [Fixnum] `0` or `1`
       def getrange(key, start, stop)
-        call(key, [:getrange, key, start, stop])
+        call(key, [:getrange, key, start, stop], read: true)
       end
 
       # Sets or clears the bit at offset in the string value stored at key.
@@ -173,7 +173,7 @@ class RedisCluster
       # @param [Fixnum] offset bit offset
       # @return [Fixnum] `0` or `1`
       def getbit(key, offset)
-        call(key, [:getbit, key, offset])
+        call(key, [:getbit, key, offset], read: true)
       end
 
       # Append a value to a key.
@@ -192,7 +192,7 @@ class RedisCluster
       # @param [Fixnum] stop stop index
       # @return [Fixnum] the number of bits set to 1
       def bitcount(key, start = 0, stop = -1)
-        call(key, [:bitcount, key, start, stop])
+        call(key, [:bitcount, key, start, stop], read: true)
       end
 
       # Return the position of the first bit set to 1 or 0 in a string.
@@ -208,7 +208,7 @@ class RedisCluster
         command << start if start
         command << stop if start && stop
 
-        call(key, command)
+        call(key, command, read: true)
       end
 
       # Set the string value of a key and return its old value.
@@ -227,7 +227,7 @@ class RedisCluster
       # @return [Fixnum] the length of the value stored in the key, or 0
       #   if the key does not exist
       def strlen(key)
-        call(key, [:strlen, key])
+        call(key, [:strlen, key], read: true)
       end
     end
   end

@@ -11,4 +11,8 @@ describe RedisCluster::Client do
     subject.push([:info])
     expect(subject.commit).to be_a(Array)
   end
+
+  describe '#inspect' do
+    it{ expect(subject.inspect).to eql "#<RedisCluster client v#{RedisCluster::VERSION} for 127.0.0.1:7001>"}
+  end
 end

@@ -17,7 +17,7 @@ class RedisCluster
       # @param [String] key
       # @return [Boolean] whether the key was deleted or not
       def del(key)
-        call(key, [:del, key], Redis::Boolify)
+        call(key, [:del, key], transform: Redis::Boolify)
       end
 
       # Set a key's time to live in seconds.
@@ -26,7 +26,7 @@ class RedisCluster
       # @param [Fixnum] seconds time to live
       # @return [Boolean] whether the timeout was set or not
       def expire(key, seconds)
-        call(key, [:expire, key, seconds], Redis::Boolify)
+        call(key, [:expire, key, seconds], transform: Redis::Boolify)
       end
 
       # Set a key's time to live in milliseconds.
@@ -35,7 +35,7 @@ class RedisCluster
       # @param [Fixnum] milliseconds time to live
       # @return [Boolean] whether the timeout was set or not
       def pexpire(key, milliseconds)
-        call(key, [:pexpire, key, milliseconds], Redis::Boolify)
+        call(key, [:pexpire, key, milliseconds], transform: Redis::Boolify)
       end
 
       # Determine if a key exists.
@@ -43,7 +43,7 @@ class RedisCluster
       # @param [String] key
       # @return [Boolean]
       def exists(key)
-        call(key, [:exists, key], Redis::Boolify)
+        call(key, [:exists, key], transform: Redis::Boolify, read: true)
       end
 
       # Get the time to live (in seconds) for a key.
@@ -56,7 +56,7 @@ class RedisCluster
       #     - The command returns -2 if the key does not exist.
       #     - The command returns -1 if the key exists but has no associated expire.
       def ttl(key)
-        call(key, [:ttl, key])
+        call(key, [:ttl, key], read: true)
       end
 
       # Get the time to live (in milliseconds) for a key.
@@ -69,7 +69,7 @@ class RedisCluster
       #     - The command returns -2 if the key does not exist.
       #     - The command returns -1 if the key exists but has no associated expire.
       def pttl(key)
-        call(key, [:pttl, key])
+        call(key, [:pttl, key], read: true)
       end
 
       # Determine the type stored at key.
@@ -77,7 +77,7 @@ class RedisCluster
       # @param [String] key
       # @return [String] `string`, `list`, `set`, `zset`, `hash` or `none`
       def type(key)
-        call(key, [:type, key])
+        call(key, [:type, key], read: true)
       end
 
       # Create a key using the serialized value, previously obtained using DUMP.

@@ -5,7 +5,10 @@ class FakeRedisCluster
     @result = result
   end
 
-  def call(_key, _args, trans = nil)
-    trans ? trans.call(@result) : @result
+  def call(_key, _args, opts = {})
+    raise 'need Hash' unless opts.is_a?(::Hash)
+    transform = opts[:transform] || ->(v){ v }
+
+    transform.call(@result)
   end
 end

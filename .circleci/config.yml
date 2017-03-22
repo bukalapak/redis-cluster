@@ -22,7 +22,6 @@ jobs:
       - save_cache:
           paths: [/bin/redis-server]
           key: "redis-3.2.8"
-      - run: .circleci/start.sh
 
       - run: rake
 

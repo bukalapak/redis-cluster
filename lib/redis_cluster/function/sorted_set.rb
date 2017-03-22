@@ -22,7 +22,7 @@ class RedisCluster
       # @param [String] key
       # @return [Fixnum]
       def zcard(key)
-        call(key, [:zcard, key])
+        call(key, [:zcard, key], read: true)
       end
 
       # Add one or more members to a sorted set, or update the score for members
@@ -70,10 +70,10 @@ class RedisCluster
 
         if args.size == 1 && args[0].is_a?(Array)
           # Variadic: return float if INCR, integer if !INCR
-          call(key, zadd_options + args[0], (incr ? Redis::Floatify : nil))
+          call(key, zadd_options + args[0], transform: (incr ? Redis::Floatify : nil))
         elsif args.size == 2
           # Single pair: return float if INCR, boolean if !INCR
-          call(key, zadd_options + args, (incr ? Redis::Floatify : Redis::Boolify))
+          call(key, zadd_options + args, transform: (incr ? Redis::Floatify : Redis::Boolify))
         else
           raise ArgumentError, 'wrong number of arguments'
         end
@@ -90,7 +90,7 @@ class RedisCluster
       # @param [String] member
       # @return [Float] score of the member after incrementing it
       def zincrby(key, increment, member)
-        call(key, [:zincrby, key, increment, member], Redis::Floatify)
+        call(key, [:zincrby, key, increment, member], transform: Redis::Floatify)
       end
 
       # Remove one or more members from a sorted set.
@@ -120,7 +120,7 @@ class RedisCluster
       # @param [String] member
       # @return [Float] score of the member
       def zscore(key, member)
-        call(key, [:zscore, key, member], Redis::Floatify)
+        call(key, [:zscore, key, member], transform: Redis::Floatify, read: true)
       end
 
       # Return a range of members in a sorted set, by index.
@@ -149,7 +149,7 @@ class RedisCluster
           block = Redis::FloatifyPairs
         end
 
-        call(key, args, block)
+        call(key, args, transform: block, read: true)
       end
 
       # Return a range of members in a sorted set, by index, with scores ordered
@@ -171,7 +171,7 @@ class RedisCluster
           block = Redis::FloatifyPairs
         end
 
-        call(key, args, block)
+        call(key, args, transform: block, read: true)
       end
 
       # Determine the index of a member in a sorted set.
@@ -180,7 +180,7 @@ class RedisCluster
       # @param [String] member
       # @return [Fixnum]
       def zrank(key, member)
-        call(key, [:zrank, key, member])
+        call(key, [:zrank, key, member], read: true)
       end
 
       # Determine the index of a member in a sorted set, with scores ordered from
@@ -190,7 +190,7 @@ class RedisCluster
       # @param [String] member
       # @return [Fixnum]
       def zrevrank(key, member)
-        call(key, [:zrevrank, key, member])
+        call(key, [:zrevrank, key, member], read: true)
       end
 
       # Remove all members in a sorted set within the given indexes.
@@ -237,7 +237,7 @@ class RedisCluster
         limit = options[:limit]
         args.concat(['LIMIT'] + limit) if limit
 
-        call(key, args)
+        call(key, args, read: true)
       end
 
       # Return a range of members with the same score in a sorted set, by reversed lexicographical
@@ -257,7 +257,7 @@ class RedisCluster
         limit = options[:limit]
         args.concat(['LIMIT'] + limit) if limit
 
-        call(key, args)
+        call(key, args, read: true)
       end
 
       # Return a range of members in a sorted set, by score.
@@ -298,7 +298,7 @@ class RedisCluster
         limit = options[:limit]
         args.concat(['LIMIT'] + limit) if limit
 
-        call(key, args, block)
+        call(key, args, transform: block, read: true)
       end
 
       # Return a range of members in a sorted set, by score, with scores ordered
@@ -326,7 +326,7 @@ class RedisCluster
         limit = options[:limit]
         args.concat(['LIMIT'] + limit) if limit
 
-        call(key, args, block)
+        call(key, args, transform: block, read: true)
       end
 
       # Remove all members in a sorted set within the given scores.
@@ -368,7 +368,7 @@ class RedisCluster
       #   - exclusive maximum score is specified by prefixing `(`
       # @return [Fixnum] number of members in within the specified range
       def zcount(key, min, max)
-        call(key, [:zcount, key, min, max])
+        call(key, [:zcount, key, min, max], read: true)
       end
     end
   end

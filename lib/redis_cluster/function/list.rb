@@ -16,7 +16,7 @@ class RedisCluster
       # @param [String] key
       # @return [Fixnum]
       def llen(key)
-        call(key, [:llen, key])
+        call(key, [:llen, key], read: true)
       end
 
       # Prepend one or more values to a list, creating the list if it doesn't exist
@@ -77,7 +77,7 @@ class RedisCluster
       # @param [Fixnum] index
       # @return [String]
       def lindex(key, index)
-        call(key, [:lindex, key, index])
+        call(key, [:lindex, key, index], read: true)
       end
 
       # Insert an element before or after another element in a list.
@@ -99,7 +99,7 @@ class RedisCluster
       # @param [Fixnum] stop stop index
       # @return [Array<String>]
       def lrange(key, start, stop)
-        call(key, [:lrange, key, start, stop])
+        call(key, [:lrange, key, start, stop], read: true)
       end
 
       # Remove elements from a list.

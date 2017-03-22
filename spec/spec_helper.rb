@@ -5,6 +5,7 @@ require 'simplecov'
 require 'coveralls'
 
 require_relative 'helper/fake_redis_cluster'
+require_relative 'helper/shared_example_function'
 
 SimpleCov.formatter =
   if ENV['CI']

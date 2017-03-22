@@ -38,7 +38,7 @@ class RedisCluster
       # @param [Float] increment
       # @return [Float] value of the field after incrementing it
       def hincrbyfloat(key, field, increment)
-        call(key, [:hincrbyfloat, key, field, increment], Redis::Floatify)
+        call(key, [:hincrbyfloat, key, field, increment], transform: Redis::Floatify)
       end
 
       # Set one or more hash values.
@@ -61,7 +61,7 @@ class RedisCluster
       # @param [String] value
       # @return [Boolean] whether or not the field was **added** to the hash
       def hset(key, field, value)
-        call(key, [:hset, key, field, value], Redis::Boolify)
+        call(key, [:hset, key, field, value], transform: Redis::Boolify)
       end
 
       # Set the value of a hash field, only if the field does not exist.
@@ -71,7 +71,7 @@ class RedisCluster
       # @param [String] value
       # @return [Boolean] whether or not the field was **added** to the hash
       def hsetnx(key, field, value)
-        call(key, [:hsetnx, key, field, value], Redis::Boolify)
+        call(key, [:hsetnx, key, field, value], transform: Redis::Boolify)
       end
 
       # Determine if a hash field exists.
@@ -80,7 +80,7 @@ class RedisCluster
       # @param [String] field
       # @return [Boolean] whether or not the field exists in the hash
       def hexists(key, field)
-        call(key, [:hexists, key, field], Redis::Boolify)
+        call(key, [:hexists, key, field], transform: Redis::Boolify, read: true)
       end
 
       # Get the value of a hash field.
@@ -89,7 +89,7 @@ class RedisCluster
       # @param [String] field
       # @return [String]
       def hget(key, field)
-        call(key, [:hget, key, field])
+        call(key, [:hget, key, field], read: true)
       end
 
       # Get all the fields and values in a hash.
@@ -97,7 +97,7 @@ class RedisCluster
       # @param [String] key
       # @return [Hash<String, String>]
       def hgetall(key)
-        call(key, [:hgetall, key], Redis::Hashify)
+        call(key, [:hgetall, key], transform: Redis::Hashify, read: true)
       end
 
       # Get all the fields in a hash.
@@ -105,7 +105,7 @@ class RedisCluster
       # @param [String] key
       # @return [Array<String>]
       def hkeys(key)
-        call(key, [:hkeys, key])
+        call(key, [:hkeys, key], read: true)
       end
 
       # Get all the values in a hash.
@@ -113,7 +113,7 @@ class RedisCluster
       # @param [String] key
       # @return [Array<String>]
       def hvals(key)
-        call(key, [:hvals, key])
+        call(key, [:hvals, key], read: true)
       end
 
       # Get the number of fields in a hash.
@@ -121,7 +121,7 @@ class RedisCluster
       # @param [String] key
       # @return [Fixnum] number of fields in the hash
       def hlen(key)
-        call(key, [:hlen, key])
+        call(key, [:hlen, key], read: true)
       end
 
       # Get the values of all the given hash fields.
@@ -134,7 +134,7 @@ class RedisCluster
       # @param [Array<String>] fields array of fields
       # @return [Array<String>] an array of values for the specified fields
       def hmget(key, *fields)
-        call(key, [:hmget, key] + fields)
+        call(key, [:hmget, key] + fields, read: true)
       end
 
       # Returns the string length of the value associated with field in the hash stored at key.
@@ -143,7 +143,7 @@ class RedisCluster
       # @param [String] field
       # @return [Fixnum] String lenght
       def hstrlen(key, field)
-        call(key, [:hstrlen, key, field])
+        call(key, [:hstrlen, key, field], read: true)
       end
     end
   end

@@ -17,7 +17,7 @@ class RedisCluster
       # @param [String] key
       # @return [Fixnum]
       def scard(key)
-        call(key, [:scard, key])
+        call(key, [:scard, key], read: true)
       end
 
       # Add one or more members to a set.
@@ -59,7 +59,7 @@ class RedisCluster
         args = [:srandmember, key]
         args << count if count
 
-        call(key, args)
+        call(key, args, read: true)
       end
 
       # Determine if a given value is a member of a set.
@@ -68,7 +68,7 @@ class RedisCluster
       # @param [String] member
       # @return [Boolean]
       def sismember(key, member)
-        call(key, [:sismember, key, member], Redis::Boolify)
+        call(key, [:sismember, key, member], transform: Redis::Boolify, read: true)
       end
 
       # Get all the members in a set.
@@ -76,26 +76,7 @@ class RedisCluster
       # @param [String] key
       # @return [Array<String>]
       def smembers(key)
-        call(key, [:smembers, key])
-      end
-
-      # Scan a set
-      #
-      # @example Retrieve the first batch of keys in a set
-      #   redis.sscan("set", 0)
-      #
-      # @param [String, Integer] cursor the cursor of the iteration
-      # @param [Hash] options
-      #   - `:match => String`: only return keys matching the pattern
-      #   - `:count => Integer`: return count keys at most per iteration
-      #
-      # @return [String, Array<String>] the next cursor and all found members
-      def sscan(key, cursor, options = {})
-        args = [:sscan, key, cursor]
-        args.push('MATCH', options[:match]) if options[:match]
-        args.push('COUNT', options[:count]) if options[:count]
-
-        call(key, args)
+        call(key, [:smembers, key], read: true)
       end
     end
   end

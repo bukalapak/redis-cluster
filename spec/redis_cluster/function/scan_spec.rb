@@ -2,29 +2,10 @@
 require 'redis_cluster/function/scan'
 
 describe RedisCluster::Function::Scan do
-  subject{ FakeRedisCluster.new(result).tap{ |o| o.extend described_class } }
-
-  describe '#hscan' do
-    let(:result){ ["0", ['wew', 2, 'waw', 2]] }
-
-    it do
-      expect(subject).to receive(:call).with(:wow, [:hscan, :wow, 0, 'MATCH', '*', 'COUNT', 1000], RedisCluster::HSCAN).and_return(["0", [['wew', 2], ['waw', 2]]])
-      subject.hscan(:wow, 0, match: '*', count: 1000)
-    end
-  end
-
-  describe '#zscan' do
-    let(:result){ ["0", ['wew', '2.2', 'waw', '3.3']] }
-
-    it do
-      expect(subject).to receive(:call).with(:wow, [:zscan, :wow, 0, 'MATCH', '*', 'COUNT', 1000], RedisCluster::ZSCAN).and_return(["0", [['wew', 2.2], ['waw', 3.3]]])
-      subject.zscan(:wow, 0, match: '*', count: 1000)
-    end
-  end
-
-  describe '#zscan' do
+  describe '#zscan_each' do
+    subject{ FakeRedisCluster.new(result).tap{ |o| o.extend described_class } }
     let(:value){ [['wew', 2.2], ['waw', 3.3]] }
-    let(:result){ ["0", value.flatten.map(&:to_s)] }
+    let(:result){ ['0', value.flatten.map(&:to_s)] }
 
     it do
       idx = 0
@@ -34,4 +15,27 @@ describe RedisCluster::Function::Scan do
       end
     end
   end
+
+  include_examples 'redis function', [
+    {
+      method:        ->{ :hscan },
+      args:          ->{ [key, 0, match: '*', count: 1000] },
+      redis_command: ->{ [method, key, 0, 'MATCH', '*', 'COUNT', 1000] },
+      redis_result:  ->{ ['0', ['wew', 2, 'waw', 2]] },
+      transform:     ->{ RedisCluster::HSCAN },
+      read:          ->{ true }
+    }, {
+      method:        ->{ :zscan },
+      args:          ->{ [key, 0, match: '*', count: 1000] },
+      redis_command: ->{ [method, key, 0, 'MATCH', '*', 'COUNT', 1000] },
+      redis_result:  ->{ ['0', ['wew', '2.2', 'waw', '3.3']] },
+      transform:     ->{ RedisCluster::ZSCAN },
+      read:          ->{ true }
+    }, {
+      method:        ->{ :sscan },
+      args:          ->{ [key, 0] },
+      redis_result:  ->{ ['0', ['waw', 'wew']] },
+      read:          ->{ true }
+    }
+  ]
 end

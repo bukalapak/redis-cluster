@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 require 'redis'
 
+require_relative 'version'
+
 class RedisCluster
 
   # Client is a decorator object for Redis::Client. It add queue to support pipelining and another
@@ -12,6 +14,10 @@ class RedisCluster
       @client = Redis::Client.new(opts)
       @queue = []
       @url = "#{client.host}:#{client.port}"
+    end
+
+    def inspect
+      "#<RedisCluster client v#{RedisCluster::VERSION} for #{url}>"
     end
 
     def connected?

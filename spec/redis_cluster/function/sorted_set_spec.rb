@@ -2,48 +2,36 @@
 require 'redis_cluster/function/sorted_set'
 
 describe RedisCluster::Function::SortedSet do
-  subject{ FakeRedisCluster.new(result).tap{ |o| o.extend described_class } }
-
-  describe '#zcard' do
-    let(:result){ 2 }
-    let(:key){ :wow }
-    let(:command){ [key] }
-    let(:method){ :zcard }
-
-    it do
-      expect(subject).to receive(:call).with(key, [method] + command).and_return(result)
-      subject.public_send(method, *command)
-    end
-  end
-
   describe '#zadd' do
     let(:key){ :wow }
     let(:method){ :zadd }
 
     context 'single data' do
-      let(:result){ 1 }
+      let(:redis_result){ 1 }
       let(:command){ [key, 32.2, 'member', { ch: true }] }
       let(:redis_command){ [method, key, 'CH', 32.2, 'member'] }
 
       it do
-        expect(subject).to receive(:call).with(key, redis_command, Redis::Boolify).and_return(true)
+        expect{ subject.public_send(method, *command) }.not_to raise_error
+        expect(subject).to receive(:call).with(key, redis_command, transform: Redis::Boolify).and_return(true)
         subject.public_send(method, *command)
       end
     end
 
     context 'multiple data' do
-      let(:result){ ['32.2', '1'] }
-      let(:command){ [key, [[32.2, 'member'], [1, 'member2']], { incr: true, ch: true }] }
-      let(:redis_command){ [method, key, 'CH', 'INCR', [32.2, 'member'], [1, 'member2']] }
+      let(:redis_result){ 1 }
+      let(:command){ [key, [[32.2, 'member'], [1, 'member2']], ch: true ] }
+      let(:redis_command){ [method, key, 'CH', [32.2, 'member'], [1, 'member2']] }
 
       it do
-        expect(subject).to receive(:call).with(key, redis_command, Redis::Floatify).and_return([ 32.2, 1 ])
+        expect{ subject.public_send(method, *command) }.not_to raise_error
+        expect(subject).to receive(:call).with(key, redis_command, transform: nil).and_return(1)
         subject.public_send(method, *command)
       end
     end
 
     context 'invalid argument' do
-      let(:result){ nil }
+      let(:redis_result){ nil }
       it do
         expect{ subject.zadd(key, :test) }.to raise_error(ArgumentError)
         expect{ subject.zadd(key, 2.2, :test, 3.3, :wow) }.to raise_error(ArgumentError)
@@ -51,175 +39,93 @@ describe RedisCluster::Function::SortedSet do
     end
   end
 
-  describe '#zincrby' do
-    let(:result){ '2.2' }
-    let(:key){ :wow }
-    let(:command){ [key, 2.2, 'member'] }
-    let(:method){ :zincrby }
-
-    it do
-      expect(subject).to receive(:call).with(key, [method] + command, Redis::Floatify).and_return(2.2)
-      subject.public_send(method, *command)
-    end
-  end
-
-  describe '#zrem' do
-    let(:result){ 2 }
-    let(:key){ :wow }
-    let(:command){ [key, ['member', 'member2']] }
-    let(:method){ :zrem }
-
-    it do
-      expect(subject).to receive(:call).with(key, [method] + command).and_return(result)
-      subject.public_send(method, *command)
-    end
-  end
-
-  describe '#zscore' do
-    let(:result){ '2.2' }
-    let(:key){ :wow }
-    let(:command){ [key, 'member'] }
-    let(:method){ :zscore }
-
-    it do
-      expect(subject).to receive(:call).with(key, [method] + command, Redis::Floatify).and_return(2.2)
-      subject.public_send(method, *command)
-    end
-  end
-
-  describe '#zrange' do
-    let(:result){ [['member', '2.2']] }
-    let(:key){ :wow }
-    let(:command){ [key, 0, -1, withscores: true] }
-    let(:redis_command){ [method, key, 0, -1, 'WITHSCORES'] }
-    let(:method){ :zrange }
-
-    it do
-      expect(subject).to receive(:call).with(key, redis_command, Redis::FloatifyPairs).and_return([['member', 2.2]])
-      subject.public_send(method, *command)
-    end
-  end
-
-  describe '#zrevrange' do
-    let(:result){ [['member', '2.2']] }
-    let(:key){ :wow }
-    let(:command){ [key, 0, -1, withscores: true] }
-    let(:redis_command){ [method, key, 0, -1, 'WITHSCORES'] }
-    let(:method){ :zrevrange }
-
-    it do
-      expect(subject).to receive(:call).with(key, redis_command, Redis::FloatifyPairs).and_return([['member', 2.2]])
-      subject.public_send(method, *command)
-    end
-  end
-
-  describe '#zrank' do
-    let(:result){ 1 }
-    let(:key){ :wow }
-    let(:command){ [key, 'member'] }
-    let(:method){ :zrank }
-
-    it do
-      expect(subject).to receive(:call).with(key, [method] + command).and_return(result)
-      subject.public_send(method, *command)
-    end
-  end
-
-  describe '#zrevrank' do
-    let(:result){ 9 }
-    let(:key){ :wow }
-    let(:command){ [key, 'member'] }
-    let(:method){ :zrevrank }
-
-    it do
-      expect(subject).to receive(:call).with(key, [method] + command).and_return(result)
-      subject.public_send(method, *command)
-    end
-  end
-
-  describe '#zremrangebyrank' do
-    let(:result){ 9 }
-    let(:key){ :wow }
-    let(:command){ [key, 0, -1] }
-    let(:method){ :zremrangebyrank }
-
-    it do
-      expect(subject).to receive(:call).with(key, [method] + command).and_return(result)
-      subject.public_send(method, *command)
-    end
-  end
-
-  describe '#zrangebylex' do
-    let(:result){ ['a member', 'b member'] }
-    let(:key){ :wow }
-    let(:command){ [key, 'a', 'b'] }
-    let(:method){ :zrangebylex }
-
-    it do
-      expect(subject).to receive(:call).with(key, [method] + command).and_return(result)
-      subject.public_send(method, *command)
-    end
-  end
-
-  describe '#zrevrangebylex' do
-    let(:result){ ['b member', 'a member'] }
-    let(:key){ :wow }
-    let(:command){ [key, 'a', 'b'] }
-    let(:method){ :zrevrangebylex }
-
-    it do
-      expect(subject).to receive(:call).with(key, [method, key, 'b', 'a']).and_return(result)
-      subject.public_send(method, *command)
-    end
-  end
-
-  describe '#zrangebyscore' do
-    let(:result){ [['member', '2.2'], ['member', '3.2']] }
-    let(:key){ :wow }
-    let(:command){ [key, '0', '+inf', withscores: true] }
-    let(:redis_command){ [method, key, '0', '+inf', 'WITHSCORES'] }
-    let(:method){ :zrangebyscore }
-
-    it do
-      expect(subject).to receive(:call).with(key, redis_command, Redis::FloatifyPairs).and_return([['member', 2.2], ['member', 3.2]])
-      subject.public_send(method, *command)
-    end
-  end
-
-  describe '#zrevrangebyscore' do
-    let(:result){ [['member', '3.2'], ['member', '2.2']] }
-    let(:key){ :wow }
-    let(:command){ [key, '0', '+inf', withscores: true] }
-    let(:redis_command){ [method, key, '+inf', '0', 'WITHSCORES'] }
-    let(:method){ :zrevrangebyscore }
-
-    it do
-      expect(subject).to receive(:call).with(key, redis_command, Redis::FloatifyPairs).and_return([['member', 3.2], ['member', 2.2]])
-      subject.public_send(method, *command)
-    end
-  end
-
-  describe '#zremrangebyscore' do
-    let(:result){ 9 }
-    let(:key){ :wow }
-    let(:command){ [key, '0', '+inf'] }
-    let(:method){ :zremrangebyscore }
-
-    it do
-      expect(subject).to receive(:call).with(key, [method] + command).and_return(result)
-      subject.public_send(method, *command)
-    end
-  end
-
-  describe '#zcount' do
-    let(:result){ 9 }
-    let(:key){ :wow }
-    let(:command){ [key, 0, -1] }
-    let(:method){ :zcount }
-
-    it do
-      expect(subject).to receive(:call).with(key, [method] + command).and_return(result)
-      subject.public_send(method, *command)
-    end
-  end
+  include_examples 'redis function', [
+    {
+      method:        ->{ :zcard },
+      args:          ->{ [key] },
+      redis_result:  ->{ 2 },
+      read:          ->{ true }
+    }, {
+      method:        ->{ :zincrby },
+      args:          ->{ [key, 2.2, 'member'] },
+      redis_result:  ->{ '2.2' },
+      transform:     ->{ Redis::Floatify },
+      read:          ->{ false }
+    }, {
+      method:        ->{ :zrem },
+      args:          ->{ [key, ['member', 'member2']] },
+      redis_result:  ->{ 2 },
+      read:          ->{ false }
+    }, {
+      method:        ->{ :zscore },
+      args:          ->{ [key, 'member'] },
+      redis_result:  ->{ '2.2' },
+      transform:     ->{ Redis::Floatify },
+      read:          ->{ true }
+    }, {
+      method:        ->{ :zrange },
+      args:          ->{ [key, 0, -1, withscores: true] },
+      redis_command: ->{ [method, key, 0, -1, 'WITHSCORES'] },
+      redis_result:  ->{ [['member', '2.2']] },
+      transform:     ->{ Redis::FloatifyPairs },
+      read:          ->{ true }
+    }, {
+      method:        ->{ :zrevrange },
+      args:          ->{ [key, 0, -1, withscores: true] },
+      redis_command: ->{ [method, key, 0, -1, 'WITHSCORES'] },
+      redis_result:  ->{ [['member', '2.2']] },
+      transform:     ->{ Redis::FloatifyPairs },
+      read:          ->{ true }
+    }, {
+      method:        ->{ :zrank },
+      args:          ->{ [key, 'member'] },
+      redis_result:  ->{ 1 },
+      read:          ->{ true }
+    }, {
+      method:        ->{ :zrevrank },
+      args:          ->{ [key, 'member'] },
+      redis_result:  ->{ 9 },
+      read:          ->{ true }
+    }, {
+      method:        ->{ :zremrangebyrank },
+      args:          ->{ [key, 0, -1] },
+      redis_result:  ->{ 9 },
+      read:          ->{ false }
+    }, {
+      method:        ->{ :zrangebylex },
+      args:          ->{ [key, 'a', 'b'] },
+      redis_result:  ->{ ['a member', 'b member'] },
+      read:          ->{ true }
+    }, {
+      method:        ->{ :zrevrangebylex },
+      args:          ->{ [key, 'a', 'b'] },
+      redis_command: ->{ [method, key, 'b', 'a'] },
+      redis_result:  ->{ ['b member', 'a member'] },
+      read:          ->{ true }
+    }, {
+      method:        ->{ :zrangebyscore },
+      args:          ->{ [key, '0', '+inf', withscores: true] },
+      redis_command: ->{ [method, key, '0', '+inf', 'WITHSCORES'] },
+      redis_result:  ->{ ['member1', '2.2', 'member2', '3.2'] },
+      transform:     ->{ Redis::FloatifyPairs },
+      read:          ->{ true }
+    }, {
+      method:        ->{ :zrevrangebyscore },
+      args:          ->{ [key, '0', '+inf', withscores: true] },
+      redis_command: ->{ [method, key, '+inf', '0', 'WITHSCORES'] },
+      redis_result:  ->{ ['member2', '3.2', 'member1', '2.2'] },
+      transform:     ->{ Redis::FloatifyPairs },
+      read:          ->{ true }
+    }, {
+      method:        ->{ :zremrangebyscore },
+      args:          ->{ [key, '0', '+inf'] },
+      redis_result:  ->{ 9 },
+      read:          ->{ false }
+    }, {
+      method:        ->{ :zcount },
+      args:          ->{ [key, 0, -1] },
+      redis_result:  ->{ 9 },
+      read:          ->{ true }
+    }
+  ]
 end
