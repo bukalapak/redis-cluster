@@ -48,10 +48,12 @@ class RedisCluster
     opts[:transform] ||= NOOP
     slot = slot_for([ keys ].flatten )
 
-    if pipeline?
-      call_pipeline(slot, command, opts)
-    else
-      call_immediately(slot, command, opts)
+    safely do
+      if pipeline?
+        call_pipeline(slot, command, opts)
+      else
+        call_immediately(slot, command, opts)
+      end
     end
   end
 
@@ -105,36 +107,34 @@ class RedisCluster
   end
 
   def call_immediately(slot, command, transform:, read: false)
-    safely do
-      try = 3
-      asking = false
-      reply = nil
-      mode = read ? read_mode : :master
-      client = cluster.public_send(mode, slot)
+    try = 3
+    asking = false
+    reply = nil
+    mode = read ? read_mode : :master
+    client = cluster.public_send(mode, slot)
 
-      while try.positive?
-        begin
-          try -= 1
+    while try.positive?
+      begin
+        try -= 1
 
-          client.push([:asking]) if asking
-          reply = client.call(command)
+        client.push([:asking]) if asking
+        reply = client.call(command)
 
-          err, url = scan_reply(reply)
-          return transform.call(reply) unless err
+        err, url = scan_reply(reply)
+        return transform.call(reply) unless err
 
-          cluster.reset if err == :moved
-          asking = err == :ask
-          client = cluster[url]
-        rescue Redis::CannotConnectError => e
-          asking = false
-          cluster.reset
-          client = cluster.public_send(mode, slot)
-          reply = e
-        end
+        cluster.reset if err == :moved
+        asking = err == :ask
+        client = cluster[url]
+      rescue Redis::CannotConnectError => e
+        asking = false
+        cluster.reset
+        client = cluster.public_send(mode, slot)
+        reply = e
       end
-
-      raise reply
     end
+
+    raise reply
   end
 
   def call_pipeline(slot, command, opts)

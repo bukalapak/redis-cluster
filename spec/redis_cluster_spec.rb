@@ -168,4 +168,22 @@ describe RedisCluster do
       end
     end
   end
+
+  it 'can handle race condition' do
+    subject.call('wew', [:set, 'wew', 'wew'])
+
+    t = Thread.new do
+      subject.pipelined do
+        sleep 5
+        a = subject.call('wew', [:get, 'wew'], read: true)
+      end
+
+      expect(a).to be_a RedisCluster::Future
+    end
+
+    sleep 1
+    b = subject.call('wew', [:get, 'wew'], read: true)
+
+    expect(b).to eql 'wew'
+  end
 end
