@@ -94,6 +94,14 @@ class RedisCluster
 
         call(key, args)
       end
+
+      # Return a serialized version of the value stored at a key.
+      #
+      # @param [String] key
+      # @return [String] serialized_value
+      def dump(key)
+        call(key, [:dump, key], read: true)
+      end
     end
   end
 end

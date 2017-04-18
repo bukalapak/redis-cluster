@@ -47,6 +47,11 @@ describe RedisCluster::Function::Key do
       args:          ->{ [key, 1000, 'serialized_value'] },
       redis_result:  ->{ 'OK' },
       read:          ->{ false }
+    }, {
+      method:        ->{ :dump },
+      args:          ->{ [key] },
+      redis_result:  ->{ 'string' },
+      read:          ->{ true }
     }
   ]
 end
