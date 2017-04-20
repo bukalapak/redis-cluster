@@ -15,7 +15,7 @@ class RedisCluster
       @clients = {}
       @replicas = nil
 
-      slots_and_clients(seed_client(seeds))
+      init_client(seeds)
     end
 
     # Return Redis::Client for a given key.
@@ -92,19 +92,22 @@ class RedisCluster
       @replicas = replicas
     end
 
-    def seed_client(seeds)
-      client = nil
+    def init_client(seeds)
       try = seeds.count
+      err = nil
 
-      while !client && try.positive?
+      while try.positive?
         try -= 1
         begin
           client = create_client(seeds[try])
-        rescue StandardError
+          slots_and_clients(client)
+          return
+        rescue StandardError => e
+          err = e
         end
       end
 
-      return client
+      raise err
     end
 
     def create_client(url)

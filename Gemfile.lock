@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    redis-cluster (0.0.4)
+    redis-cluster (0.0.5)
       redis (~> 3.0)
 
 GEM
