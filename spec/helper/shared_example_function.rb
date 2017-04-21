@@ -39,7 +39,6 @@ shared_examples 'redis function' do |test_table|
       it do
         expect{ subject.public_send(method, *args) }.not_to raise_error
         expect(subject).to receive(:call).with(*call_args).and_return(result)
-        binding.pry if method == :publish
         subject.public_send(method, *args)
       end
     end
