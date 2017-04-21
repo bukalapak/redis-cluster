@@ -29,7 +29,7 @@ class RedisCluster
       # @param message [String]         message that want to be sent
       #
       def publish(channel, message)
-        call(channel, [:publish, channel])
+        call(channel, [:publish, channel, message])
       end
 
       #
