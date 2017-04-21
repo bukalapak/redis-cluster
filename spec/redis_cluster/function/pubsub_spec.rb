@@ -6,10 +6,13 @@ describe RedisCluster::Function::PubSub do
                        method: -> { :publish },
                        args:   -> { [channel, message] },
                        redis_result: -> { 0 },
-                       read:   -> { false }
+                       read:   -> { false },
+                       key:    -> { channel }
                      }
                    ]
 
+  #
+  # TODO: think about redis subscribe (blocking test)
   # include_examples 'redis pubsub function', [
   #                    {
   #                      method: -> { :subcribe },
