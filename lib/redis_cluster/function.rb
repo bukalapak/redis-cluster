@@ -7,6 +7,7 @@ require_relative 'function/hash'
 require_relative 'function/string'
 require_relative 'function/sorted_set'
 require_relative 'function/scan'
+require_relative 'function/pubsub'
 
 class RedisCluster
 
@@ -19,5 +20,6 @@ class RedisCluster
     include Function::String
     include Function::SortedSet
     include Function::Scan
+    include Function::PubSub
   end
 end
