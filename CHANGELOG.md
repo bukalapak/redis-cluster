@@ -1,3 +1,6 @@
+## 0.0.6 / 2017-04-21
+* [FEATURE] Add pubsub support for redis-cluster
+
 ## 0.0.5 / 2017-04-20
 * [BUGFIX] Proper error handling at start-up
 
