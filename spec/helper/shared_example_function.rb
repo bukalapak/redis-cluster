@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'pry'
 require 'securerandom'
 
 shared_examples 'redis pubsub function' do |test_table|
