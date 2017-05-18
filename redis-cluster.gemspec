@@ -8,8 +8,8 @@ Gem::Specification.new do |s|
   s.name              = 'redis-cluster'
   s.version           = RedisCluster::VERSION
   s.summary           = 'Redis cluster client. Support pipelining.'
-  s.authors           = ['Roland Rinfandi Utama']
-  s.email             = ['roland_hawk@yahoo.com']
+  s.authors           = ['Bukalapak']
+  s.email             = ['sre@bukalapak.com']
   s.homepage          = 'https://github.com/bukalapak/redis-cluster'
   s.license           = 'MIT'
 
