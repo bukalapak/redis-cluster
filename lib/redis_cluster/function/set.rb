@@ -8,8 +8,8 @@ class RedisCluster
     # see https://redis.io/commands#set. Most of the code are copied from
     # https://github.com/redis/redis-rb/blob/master/lib/redis.rb.
     #
-    # SETTER = [:sadd, :spop, :srem]
-    # GETTER = [:scard, :sismembers, :smembers, :srandmember, :sscan]
+    # SETTER = [:sadd, :spop, :srem, :sdiffstore, :sinterstore, :smove, :sunionstore]
+    # GETTER = [:scard, :sismember, :smembers, :srandmember, :sscan, :sdiff, :sinter, :sunion]
     module Set
 
       # Get the number of members in a set.
@@ -77,6 +77,69 @@ class RedisCluster
       # @return [Array<String>]
       def smembers(key)
         call(key, [:smembers, key], read: true)
+      end
+
+      # Subtract multiple sets.
+      #
+      # @param [String, Array<String>] keys keys pointing to sets to subtract
+      # @return [Array<String>] members in the difference
+      def sdiff(*keys)
+        call(keys, [:sdiff] + keys, read: true)
+      end
+
+      # Subtract multiple sets and store the resulting set in a key.
+      #
+      # @param [String] destination destination key
+      # @param [String, Array<String>] keys keys pointing to sets to subtract
+      # @return [Fixnum] number of elements in the resulting set
+      def sdiffstore(destination, *keys)
+        call(keys, [:sdiffstore, destination] + keys)
+      end
+
+      # Intersect multiple sets.
+      #
+      # @param [String, Array<String>] keys keys pointing to sets to intersect
+      # @return [Array<String>] members in the intersection
+      def sinter(*keys)
+        call(keys, [:sinter] + keys, read: true)
+      end
+
+      # Intersect multiple sets and store the resulting set in a key.
+      #
+      # @param [String] destination destination key
+      # @param [String, Array<String>] keys keys pointing to sets to intersect
+      # @return [Fixnum] number of elements in the resulting set
+      def sinterstore(destination, *keys)
+        call(keys, [:sinterstore, destination] + keys)
+      end
+
+      # Move a member from one set to another.
+      #
+      # @param [String] source source key
+      # @param [String] destination destination key
+      # @param [String] member member to move from `source` to `destination`
+      # @return [Boolean]
+      def smove(source, destination, member)
+        call([source, destination],
+             [:smove, source, destination, member],
+             transform: Redis::Boolify)
+      end
+
+      # Add multiple sets.
+      #
+      # @param [String, Array<String>] keys keys pointing to sets to unify
+      # @return [Array<String>] members in the union
+      def sunion(*keys)
+        call(keys, [:sunion] + keys, read: true)
+      end
+
+      # Add multiple sets and store the resulting set in a key.
+      #
+      # @param [String] destination destination key
+      # @param [String, Array<String>] keys keys pointing to sets to unify
+      # @return [Fixnum] number of elements in the resulting set
+      def sunionstore(destination, *keys)
+        call(keys, [:sunionstore, destination] + keys)
       end
     end
   end
