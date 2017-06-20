@@ -39,6 +39,52 @@ describe RedisCluster::Function::Set do
       args:          ->{ [key] },
       redis_result:  ->{ ['waw', 'wew'] },
       read:          ->{ true }
+    }, {
+      method:        ->{ :sdiff },
+      multi_keys:    ->{ true },
+      args:          ->{ key },
+      redis_result:  ->{ ['wew'] },
+      read:          ->{ true }
+    }, {
+      method:        ->{ :sdiffstore },
+      multi_keys:    ->{ true },
+      destination:   ->{ '{wow}3' },
+      args:          ->{ [destination, key].flatten },
+      redis_result:  ->{ 1 },
+      read:          ->{ false }
+    }, {
+      method:        ->{ :sinter },
+      multi_keys:    ->{ true },
+      args:          ->{ key },
+      redis_result:  ->{ ['waw'] },
+      read:          ->{ true }
+    }, {
+      method:        ->{ :sinterstore },
+      multi_keys:    ->{ true },
+      destination:   ->{ '{wow}3' },
+      args:          ->{ [destination, key].flatten },
+      redis_result:  ->{ 1 },
+      read:          ->{ false }
+    }, {
+      method:        ->{ :smove },
+      multi_keys:    ->{ true },
+      args:          ->{ [key, 'waw'].flatten },
+      redis_result:  ->{ 1 },
+      transform:     ->{ Redis::Boolify },
+      read:          ->{ false }
+    }, {
+      method:        ->{ :sunion },
+      multi_keys:    ->{ true },
+      args:          ->{ key },
+      redis_result:  ->{ ['waw', 'wew', 'wuw'] },
+      read:          ->{ true }
+    }, {
+      method:        ->{ :sunionstore },
+      multi_keys:    ->{ true },
+      destination:   ->{ '{wow}3' },
+      args:          ->{ [destination, key].flatten },
+      redis_result:  ->{ 1 },
+      read:          ->{ false }
     }
   ]
 end
