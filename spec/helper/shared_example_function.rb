@@ -2,11 +2,19 @@
 
 shared_examples 'redis function' do |test_table|
   subject{ FakeRedisCluster.new(redis_result).tap{ |o| o.extend described_class } }
-  let(:key){ :wow }
+  let(:multi_keys){ false }
+  let(:key) { multi_keys ? ['{wow}1', '{wow}2'] : :wow }
   let(:result){ transform&.call(redis_result) || redis_result }
   let(:redis_command){ [method] + args }
   let(:transform){ nil }
-  let(:call_args){ [key, redis_command].tap{ |arg| arg << opts unless opts.empty? }}
+  let(:destination){ nil }
+  let(:call_args) do
+    if destination.nil?
+      [key, redis_command].tap{ |arg| arg << opts unless opts.empty? }
+    else
+      [[key, destination], redis_command].tap{ |arg| arg << opts unless opts.empty? }
+    end
+  end
   let(:opts) do
     {}.tap do |h|
       h[:transform] = transform if transform

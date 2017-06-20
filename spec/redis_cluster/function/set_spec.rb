@@ -41,45 +41,48 @@ describe RedisCluster::Function::Set do
       read:          ->{ true }
     }, {
       method:        ->{ :sdiff },
-      key:           ->{ ['{wow}1', '{wow}2'] },
+      multi_keys:    ->{ true },
       args:          ->{ key },
       redis_result:  ->{ ['wew'] },
       read:          ->{ true }
     }, {
       method:        ->{ :sdiffstore },
-      key:           ->{ ['{wow}1', '{wow}2'] },
-      args:          ->{ ['{wow}3', key].flatten },
+      multi_keys:    ->{ true },
+      destination:   ->{ '{wow}3' },
+      args:          ->{ [destination, key].flatten },
       redis_result:  ->{ 1 },
       read:          ->{ false }
     }, {
       method:        ->{ :sinter },
-      key:           ->{ ['{wow}1', '{wow}2'] },
+      multi_keys:    ->{ true },
       args:          ->{ key },
       redis_result:  ->{ ['waw'] },
       read:          ->{ true }
     }, {
       method:        ->{ :sinterstore },
-      key:           ->{ ['{wow}1', '{wow}2'] },
-      args:          ->{ ['{wow}3', key].flatten },
+      multi_keys:    ->{ true },
+      destination:   ->{ '{wow}3' },
+      args:          ->{ [destination, key].flatten },
       redis_result:  ->{ 1 },
       read:          ->{ false }
     }, {
       method:        ->{ :smove },
-      key:           ->{ ['{wow}1', '{wow}2'] },
+      multi_keys:    ->{ true },
       args:          ->{ [key, 'waw'].flatten },
       redis_result:  ->{ 1 },
       transform:     ->{ Redis::Boolify },
       read:          ->{ false }
     }, {
       method:        ->{ :sunion },
-      key:           ->{ ['{wow}1', '{wow}2'] },
+      multi_keys:    ->{ true },
       args:          ->{ key },
       redis_result:  ->{ ['waw', 'wew', 'wuw'] },
       read:          ->{ true }
     }, {
       method:        ->{ :sunionstore },
-      key:           ->{ ['{wow}1', '{wow}2'] },
-      args:          ->{ ['{wow}3', key].flatten },
+      multi_keys:    ->{ true },
+      destination:   ->{ '{wow}3' },
+      args:          ->{ [destination, key].flatten },
       redis_result:  ->{ 1 },
       read:          ->{ false }
     }

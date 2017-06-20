@@ -93,7 +93,7 @@ class RedisCluster
       # @param [String, Array<String>] keys keys pointing to sets to subtract
       # @return [Fixnum] number of elements in the resulting set
       def sdiffstore(destination, *keys)
-        call(keys, [:sdiffstore, destination] + keys)
+        call([keys, destination], [:sdiffstore, destination] + keys)
       end
 
       # Intersect multiple sets.
@@ -110,7 +110,7 @@ class RedisCluster
       # @param [String, Array<String>] keys keys pointing to sets to intersect
       # @return [Fixnum] number of elements in the resulting set
       def sinterstore(destination, *keys)
-        call(keys, [:sinterstore, destination] + keys)
+        call([keys, destination], [:sinterstore, destination] + keys)
       end
 
       # Move a member from one set to another.
@@ -139,7 +139,7 @@ class RedisCluster
       # @param [String, Array<String>] keys keys pointing to sets to unify
       # @return [Fixnum] number of elements in the resulting set
       def sunionstore(destination, *keys)
-        call(keys, [:sunionstore, destination] + keys)
+        call([keys, destination], [:sunionstore, destination] + keys)
       end
     end
   end
