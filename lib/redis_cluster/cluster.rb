@@ -1,4 +1,6 @@
 # frozen_string_literal: true
+require 'redis'
+
 require_relative 'client'
 
 class RedisCluster
@@ -75,17 +77,20 @@ class RedisCluster
     def slots_and_clients(client)
       replicas = ::Hash.new{ |h, k| h[k] = [] }
 
-      client.call([:cluster, :slots]).tap do |result|
-        result.each do |arr|
-          arr[2..-1].each_with_index do |a, i|
-            cli = self["#{a[0]}:#{a[1]}"]
-            replicas[arr[0]] << cli
-            cli.call([:readonly]) if i.nonzero?
-          end
+      result = client.call([:cluster, :slots])
+      if result.is_a?(Redis::CommandError)
+        host, port = client.url.split(':', 2)
+        result = [[0, HASH_SLOTS - 1, [host, port, nil], [host, port, nil]]]
+      end
+      result.each do |arr|
+        arr[2..-1].each_with_index do |a, i|
+          cli = self["#{a[0]}:#{a[1]}"]
+          replicas[arr[0]] << cli
+          cli.call([:readonly]) if i.nonzero?
+        end
 
-          (arr[0]..arr[1]).each do |slot|
-            slots[slot] = replicas[arr[0]]
-          end
+        (arr[0]..arr[1]).each do |slot|
+          slots[slot] = replicas[arr[0]]
         end
       end
 
