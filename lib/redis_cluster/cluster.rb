@@ -78,7 +78,8 @@ class RedisCluster
       replicas = ::Hash.new{ |h, k| h[k] = [] }
 
       result = client.call([:cluster, :slots])
-      if result.is_a?(Redis::CommandError)
+      if result.is_a?(Redis::CommandError) &&
+         result.message.eql?('ERR This instance has cluster support disabled')
         host, port = client.url.split(':', 2)
         result = [[0, HASH_SLOTS - 1, [host, port, nil], [host, port, nil]]]
       end
