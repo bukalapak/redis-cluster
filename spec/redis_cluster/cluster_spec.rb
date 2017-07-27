@@ -101,4 +101,14 @@ describe RedisCluster::Cluster do
       end
     end
   end
+
+  context 'standalone redis with force_cluster option' do
+    let(:url){ '127.0.0.1:7007' }
+
+    describe '#initialize' do
+      it do
+        expect{ described_class.new([url], { force_cluster: true } ) }.to raise_error('ERR This instance has cluster support disabled')
+      end
+    end
+  end
 end
