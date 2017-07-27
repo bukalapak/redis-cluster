@@ -44,8 +44,8 @@ describe RedisCluster::Cluster do
 
     describe '#slot_for' do
       it do
-        expect(subject.slot_for('wow')).to eql 2300
-        expect(subject.slot_for('wow')).to eql subject.slot_for('coba{wow}aja{hahah}')
+        expect(subject.slot_for('key')).to eql 12539
+        expect(subject.slot_for('key')).to eql subject.slot_for('this{key}is{used}')
       end
     end
 

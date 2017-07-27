@@ -3,7 +3,7 @@ require 'redis_cluster/function/sorted_set'
 
 describe RedisCluster::Function::SortedSet do
   describe '#zadd' do
-    let(:key){ :wow }
+    let(:key){ :key }
     let(:method){ :zadd }
 
     context 'single data' do
@@ -33,8 +33,8 @@ describe RedisCluster::Function::SortedSet do
     context 'invalid argument' do
       let(:redis_result){ nil }
       it do
-        expect{ subject.zadd(key, :test) }.to raise_error(ArgumentError)
-        expect{ subject.zadd(key, 2.2, :test, 3.3, :wow) }.to raise_error(ArgumentError)
+        expect{ subject.zadd(key, :value) }.to raise_error(ArgumentError)
+        expect{ subject.zadd(key, 2.2, :value1, 3.3, :value2) }.to raise_error(ArgumentError)
       end
     end
   end

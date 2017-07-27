@@ -3,7 +3,7 @@
 shared_examples 'redis function' do |test_table|
   subject{ FakeRedisCluster.new(redis_result).tap{ |o| o.extend described_class } }
   let(:multi_keys){ false }
-  let(:key) { multi_keys ? ['{wow}1', '{wow}2'] : :wow }
+  let(:key) { multi_keys ? ['{key}1', '{key}2'] : :key }
   let(:result){ transform&.call(redis_result) || redis_result }
   let(:redis_command){ [method] + args }
   let(:transform){ nil }

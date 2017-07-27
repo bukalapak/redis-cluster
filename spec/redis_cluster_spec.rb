@@ -35,43 +35,33 @@ describe RedisCluster do
     subject{ described_class.new(seed, cluster_opts: { read_mode: :slave, silent: true }) }
 
     it do
-      expect{ subject.call('wow', [:del, 'wow', 'wew']) }.not_to raise_error
+      expect{ subject.call('key1', [:del, 'key1', 'key2']) }.not_to raise_error
     end
   end
 
   describe '#call & #pipelined' do
     context 'stable cluster' do
       it do
+        num_keys = 5
         expect do
-          subject.call('waw', [:set, 'waw', 'waw'])
-          subject.call('wew', [:set, 'wew', 'wew'])
-          subject.call('wiw', [:set, 'wiw', 'wiw'])
-          subject.call('wow', [:set, 'wow', 'wow'])
-          subject.call('wuw', [:set, 'wuw', 'wuw'])
-
-          subject.call('waw', [:get, 'waw'], read: true)
-          subject.call('wew', [:get, 'wew'], read: true)
-          subject.call('wiw', [:get, 'wiw'], read: true)
-          subject.call('wow', [:get, 'wow'], read: true)
-          subject.call('wuw', [:get, 'wuw'], read: true)
-        end.not_to raise_error
-
-        a, e, i, o, u = nil
-        expect do
-          subject.pipelined do
-            a = subject.call('waw', [:get, 'waw'])
-            e = subject.call('wew', [:get, 'wew'])
-            i = subject.call('wiw', [:get, 'wiw'])
-            o = subject.call('wow', [:get, 'wow'])
-            u = subject.call('wuw', [:get, 'wuw'])
+          num_keys.times do |i|
+            subject.call("key#{i}", [:set, "key#{i}", "value#{i}"])
+            subject.call("key#{i}", [:get, "key#{i}"], read: true)
           end
         end.not_to raise_error
 
-        expect(a.value).to eql 'waw'
-        expect(e.value).to eql 'wew'
-        expect(i.value).to eql 'wiw'
-        expect(o.value).to eql 'wow'
-        expect(u.value).to eql 'wuw'
+        futures = Array.new(num_keys)
+        expect do
+          subject.pipelined do
+            num_keys.times do |i|
+              futures[i] = subject.call("key#{i}", [:get, "key#{i}"])
+            end
+          end
+        end.not_to raise_error
+
+        num_keys.times do |i|
+          expect(futures[i].value).to eql "value#{i}"
+        end
       end
     end
 
@@ -135,55 +125,50 @@ describe RedisCluster do
 
 
       it do
-        slot = subject.cluster.slot_for('wow')
-        slot_port = subject.cluster.master(slot).url.split(':').last.to_i
-        File.new('.circleci/tmp/pid', 'r').each_with_index do |l, i|
-          `kill -9 #{l}` if slot_port - 7001 == i
-        end
-
+        num_keys = 2
         value = nil
-        expect do
-          safely do
-            subject.call('wow', [:set, 'wow', 'wow'])
-            value = subject.call('wow', [:get, 'wow'], read: true)
+        num_keys.times do |k|
+          slot = subject.cluster.slot_for("key#{k}")
+          slot_port = subject.cluster.master(slot).url.split(':').last.to_i
+          File.new('.circleci/tmp/pid', 'r').each_with_index do |l, i|
+            `kill -9 #{l}` if slot_port - 7001 == i
           end
-        end.not_to raise_error
-        expect(value).to eq 'wow'
 
-        slot = subject.cluster.slot_for('wew')
-        slot_port = subject.cluster.master(slot).url.split(':').last.to_i
-        File.new('.circleci/tmp/pid', 'r').each_with_index do |l, i|
-          `kill -9 #{l}` if slot_port - 7001 == i
-        end
-
-        expect do
-          safely do
-            subject.pipelined do
-              subject.call('wew', [:set, 'wew', 'wew'])
-              value = subject.call('wew', [:get, 'wew'], read: true)
+          expect do
+            safely do
+              if k.even?
+                subject.call("key#{k}", [:set, "key#{k}", "value#{k}"])
+                value = subject.call("key#{k}", [:get, "key#{k}"], read: true)
+              else
+                subject.pipelined do
+                  subject.call("key#{k}", [:set, "key#{k}", "value#{k}"])
+                  value = subject.call("key#{k}", [:get, "key#{k}"], read: true)
+                end
+              end
             end
-          end
-        end.not_to raise_error
-        expect(value.value).to eq 'wew'
+          end.not_to raise_error
+          tested_value = k.even? ? value : value.value
+          expect(tested_value).to eq "value#{k}"
+        end
       end
     end
   end
 
   it 'can handle race condition' do
-    subject.call('wew', [:set, 'wew', 'wew'])
+    subject.call('key', [:set, 'key', 'value'])
 
     t = Thread.new do
       subject.pipelined do
         sleep 5
-        a = subject.call('wew', [:get, 'wew'], read: true)
+        future = subject.call('key', [:get, 'key'], read: true)
       end
 
-      expect(a).to be_a RedisCluster::Future
+      expect(future).to be_a RedisCluster::Future
     end
 
     sleep 1
-    b = subject.call('wew', [:get, 'wew'], read: true)
+    value = subject.call('key', [:get, 'key'], read: true)
 
-    expect(b).to eql 'wew'
+    expect(value).to eql 'value'
   end
 end
