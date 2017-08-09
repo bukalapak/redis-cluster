@@ -90,6 +90,47 @@ class Redis
       end
     end
 
+    # Get information and statistics about the server.
+    #
+    # @param [String, Symbol] cmd e.g. "commandstats"
+    # @return [Hash<String, String>]
+    def info(cmd = nil)
+      args = [:info]
+      args << cmd.to_s if cmd
+      try = 3
+      asking = false
+      client = cluster.random
+
+      while try.positive?
+        begin
+          try -= 1
+
+          client.push([:asking]) if asking
+          reply = client.call(args)
+        rescue Redis::CannotConnectError => e
+          asking = false
+          cluster.reset
+          client = cluster.random
+          reply = ''
+        end
+      end
+      
+      if reply.kind_of?(String)
+        reply = Hash[reply.split("\r\n").map do |line|
+                       line.split(":", 2) unless line =~ /^(#|$)/
+                     end.compact]
+        
+        if cmd && cmd.to_s == "commandstats"
+          # Extract nested hashes for INFO COMMANDSTATS
+          reply = Hash[reply.map do |k, v|
+                         v = v.split(",").map { |e| e.split("=") }
+                         [k[/^cmdstat_(.*)$/, 1], Hash[v]]
+                       end]
+        end
+      end      
+      reply
+    end
+
     private
 
     NOOP = ->(v){ v }
