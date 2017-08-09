@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'redis_cluster/function/set'
+require 'redis/cluster/function/set'
 
-describe RedisCluster::Function::Set do
+describe Redis::Cluster::Function::Set do
   include_examples 'redis function', [
     {
       method:        ->{ :scard },

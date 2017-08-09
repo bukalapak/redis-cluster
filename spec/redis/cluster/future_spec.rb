@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'redis_cluster/future'
+require 'redis/cluster/future'
 
-describe RedisCluster::Future do
+describe Redis::Cluster::Future do
   subject{ described_class.new(slot, command, transformation) }
   let(:slot){ 2300 }
   let(:command){ [:exists, slot] }

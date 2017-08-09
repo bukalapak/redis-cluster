@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'redis_cluster/function/hash'
+require 'redis/cluster/function/hash'
 
-describe RedisCluster::Function::Hash do
+describe Redis::Cluster::Function::Hash do
   include_examples 'redis function', [
     {
       method:        ->{ :hdel },

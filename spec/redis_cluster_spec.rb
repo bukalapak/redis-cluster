@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require 'redis-cluster'
 
-describe RedisCluster do
+describe Redis::Cluster do
   subject{ described_class.new(seed, cluster_opts: { read_mode: :slave }) }
   let(:seed){ [ '127.0.0.1:7001' ] }
 
@@ -178,7 +178,7 @@ describe RedisCluster do
         a = subject.call('wew', [:get, 'wew'], read: true)
       end
 
-      expect(a).to be_a RedisCluster::Future
+      expect(a).to be_a Redis::Cluster::Future
     end
 
     sleep 1

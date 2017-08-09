@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'redis_cluster/client'
+require 'redis/cluster/client'
 
-describe RedisCluster::Client do
+describe Redis::Cluster::Client do
   subject{ described_class.new(host: '127.0.0.1', port: 7001) }
 
   it 'works' do
@@ -13,6 +13,6 @@ describe RedisCluster::Client do
   end
 
   describe '#inspect' do
-    it{ expect(subject.inspect).to eql "#<RedisCluster client v#{RedisCluster::VERSION} for 127.0.0.1:7001>"}
+    it{ expect(subject.inspect).to eql "#<Redis::Cluster client v#{Redis::Cluster::VERSION} for 127.0.0.1:7001>"}
   end
 end

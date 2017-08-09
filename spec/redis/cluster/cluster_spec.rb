@@ -1,8 +1,8 @@
 # frozen_string_literal: true
-require 'redis_cluster/cluster'
+require 'redis/cluster/cluster'
 require 'pry'
 
-describe RedisCluster::Cluster do
+describe Redis::Cluster::Cluster do
   subject{ described_class.new(['127.0.0.1:7001']) }
   let(:all_redis) do
     all = []

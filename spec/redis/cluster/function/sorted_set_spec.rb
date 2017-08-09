@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'redis_cluster/function/sorted_set'
+require 'redis/cluster/function/sorted_set'
 
-describe RedisCluster::Function::SortedSet do
+describe Redis::Cluster::Function::SortedSet do
   describe '#zadd' do
     let(:key){ :wow }
     let(:method){ :zadd }

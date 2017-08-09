@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'redis_cluster/function/list'
+require 'redis/cluster/function/list'
 
-describe RedisCluster::Function::List do
+describe Redis::Cluster::Function::List do
   include_examples 'redis function', [
     {
       method:        ->{ :llen },
