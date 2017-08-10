@@ -34,8 +34,8 @@ class Redis
     nodes = @options.delete :nodes
     cluster_opts = @options.delete :cluster_opts
     @client = (nodes and nodes.is_a? ::Array) ?
-                Cluster.new(nodes, redis_opts: options, cluster_opts: cluster_opts) :
-                Client.new(options)
+                Cluster.new(nodes, redis_opts: @options, cluster_opts: cluster_opts) :
+                Client.new(@options)
     @original_client = @client
 
     @queue = Hash.new { |h, k| h[k] = [] }

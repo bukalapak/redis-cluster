@@ -32,17 +32,33 @@ class Redis
       end
 
       def commit
-        return nil if queue.empty?
+        return [] if queue.empty?
 
-        result = Array.new(queue.size)
-        process(queue) do
-          queue.size.times do |i|
-            result[i] = read
+        result = Array.new(queue.size)       
+        reconnect = @reconnect
+
+        begin
+          exception = nil
+
+          process(queue) do
+            result[0] = read
+
+            @reconnect = false
+          
+            (queue.size - 1).times do |i|
+              reply = read
+              result[i + 1] = reply
+              exception = reply if exception.nil? && reply.is_a?(CommandError)
+            end
           end
-        end
-        @queue = []
 
-        return result
+          raise exception if exception
+        ensure
+          @reconnect = reconnect
+        end
+
+        result.pop if result.last == "OK"
+        result
       end
     end
   end
