@@ -27,7 +27,7 @@ class Redis
           args.push('MATCH', options[:match]) if options[:match]
           args.push('COUNT', options[:count]) if options[:count]
 
-          call(key, args, transform: ZSCAN, read: true)
+          call(*args, transform: ZSCAN, read: true)
         end
 
         # Scan a hash
@@ -46,7 +46,7 @@ class Redis
           args.push('MATCH', options[:match]) if options[:match]
           args.push('COUNT', options[:count]) if options[:count]
 
-          call(key, args, transform: HSCAN, read: true)
+          call(*args, transform: HSCAN, read: true)
         end
 
         # Scan a set
@@ -65,7 +65,7 @@ class Redis
           args.push('MATCH', options[:match]) if options[:match]
           args.push('COUNT', options[:count]) if options[:count]
 
-          call(key, args, read: true)
+          call(*args, read: true)
         end
 
         # Convenient method for iterating a hash or sorted_set.

@@ -18,7 +18,7 @@ class Redis
         # @param [String] key
         # @return [Boolean] whether the key was deleted or not
         def del(key)
-          call(key, [:del, key], transform: Redis::Boolify)
+          call(:del, key, transform: Redis::Boolify)
         end
 
         # Set a key's time to live in seconds.
@@ -27,7 +27,7 @@ class Redis
         # @param [Fixnum] seconds time to live
         # @return [Boolean] whether the timeout was set or not
         def expire(key, seconds)
-          call(key, [:expire, key, seconds], transform: Redis::Boolify)
+          call(:expire, key, seconds, transform: Redis::Boolify)
         end
 
         # Set a key's time to live in milliseconds.
@@ -36,7 +36,7 @@ class Redis
         # @param [Fixnum] milliseconds time to live
         # @return [Boolean] whether the timeout was set or not
         def pexpire(key, milliseconds)
-          call(key, [:pexpire, key, milliseconds], transform: Redis::Boolify)
+          call(:pexpire, key, milliseconds, transform: Redis::Boolify)
         end
 
         # Determine if a key exists.
@@ -44,7 +44,7 @@ class Redis
         # @param [String] key
         # @return [Boolean]
         def exists(key)
-          call(key, [:exists, key], transform: Redis::Boolify, read: true)
+          call(:exists, key, transform: Redis::Boolify, read: true)
         end
 
         # Get the time to live (in seconds) for a key.
@@ -57,7 +57,7 @@ class Redis
         #     - The command returns -2 if the key does not exist.
         #     - The command returns -1 if the key exists but has no associated expire.
         def ttl(key)
-          call(key, [:ttl, key], read: true)
+          call(:ttl, key, read: true)
         end
 
         # Get the time to live (in milliseconds) for a key.
@@ -70,7 +70,7 @@ class Redis
         #     - The command returns -2 if the key does not exist.
         #     - The command returns -1 if the key exists but has no associated expire.
         def pttl(key)
-          call(key, [:pttl, key], read: true)
+          call(:pttl, key, read: true)
         end
 
         # Determine the type stored at key.
@@ -78,7 +78,7 @@ class Redis
         # @param [String] key
         # @return [String] `string`, `list`, `set`, `zset`, `hash` or `none`
         def type(key)
-          call(key, [:type, key], read: true)
+          call(:type, key, read: true)
         end
 
         # Create a key using the serialized value, previously obtained using DUMP.
@@ -93,7 +93,7 @@ class Redis
           args = [:restore, key, ttl, serialized_value]
           args << 'REPLACE' if option[:replace]
 
-          call(key, args)
+          call(*args)
         end
 
         # Return a serialized version of the value stored at a key.
@@ -101,7 +101,7 @@ class Redis
         # @param [String] key
         # @return [String] serialized_value
         def dump(key)
-          call(key, [:dump, key], read: true)
+          call(:dump, key, read: true)
         end
       end
     end

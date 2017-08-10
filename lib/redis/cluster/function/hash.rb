@@ -19,7 +19,7 @@ class Redis
         # @param [String, Array<String>] field
         # @return [Fixnum] the number of fields that were removed from the hash
         def hdel(key, field)
-          call(key, [:hdel, key, field])
+          call(:hdel, key, field)
         end
 
         # Increment the integer value of a hash field by the given integer number.
@@ -29,7 +29,7 @@ class Redis
         # @param [Fixnum] increment
         # @return [Fixnum] value of the field after incrementing it
         def hincrby(key, field, increment)
-          call(key, [:hincrby, key, field, increment])
+          call(:hincrby, key, field, increment)
         end
 
         # Increment the numeric value of a hash field by the given float number.
@@ -39,7 +39,7 @@ class Redis
         # @param [Float] increment
         # @return [Float] value of the field after incrementing it
         def hincrbyfloat(key, field, increment)
-          call(key, [:hincrbyfloat, key, field, increment], transform: Redis::Floatify)
+          call(:hincrbyfloat, key, field, increment, transform: Redis::Floatify)
         end
 
         # Set one or more hash values.
@@ -52,7 +52,7 @@ class Redis
         # @param [Array<String>] attrs array of fields and values
         # @return [String] `"OK"`
         def hmset(key, *attrs)
-          call(key, [:hmset, key] + attrs)
+          call(*([:hmset, key] + attrs))
         end
 
         # Set the string value of a hash field.
@@ -62,7 +62,7 @@ class Redis
         # @param [String] value
         # @return [Boolean] whether or not the field was **added** to the hash
         def hset(key, field, value)
-          call(key, [:hset, key, field, value], transform: Redis::Boolify)
+          call(:hset, key, field, value, transform: Redis::Boolify)
         end
 
         # Set the value of a hash field, only if the field does not exist.
@@ -72,7 +72,7 @@ class Redis
         # @param [String] value
         # @return [Boolean] whether or not the field was **added** to the hash
         def hsetnx(key, field, value)
-          call(key, [:hsetnx, key, field, value], transform: Redis::Boolify)
+          call(:hsetnx, key, field, value, transform: Redis::Boolify)
         end
 
         # Determine if a hash field exists.
@@ -81,7 +81,7 @@ class Redis
         # @param [String] field
         # @return [Boolean] whether or not the field exists in the hash
         def hexists(key, field)
-          call(key, [:hexists, key, field], transform: Redis::Boolify, read: true)
+          call(:hexists, key, field, transform: Redis::Boolify, read: true)
         end
 
         # Get the value of a hash field.
@@ -90,7 +90,7 @@ class Redis
         # @param [String] field
         # @return [String]
         def hget(key, field)
-          call(key, [:hget, key, field], read: true)
+          call(:hget, key, field, read: true)
         end
 
         # Get all the fields and values in a hash.
@@ -98,7 +98,7 @@ class Redis
         # @param [String] key
         # @return [Hash<String, String>]
         def hgetall(key)
-          call(key, [:hgetall, key], transform: Redis::Hashify, read: true)
+          call(:hgetall, key, transform: Redis::Hashify, read: true)
         end
 
         # Get all the fields in a hash.
@@ -106,7 +106,7 @@ class Redis
         # @param [String] key
         # @return [Array<String>]
         def hkeys(key)
-          call(key, [:hkeys, key], read: true)
+          call(:hkeys, key, read: true)
         end
 
         # Get all the values in a hash.
@@ -114,7 +114,7 @@ class Redis
         # @param [String] key
         # @return [Array<String>]
         def hvals(key)
-          call(key, [:hvals, key], read: true)
+          call(:hvals, key, read: true)
         end
 
         # Get the number of fields in a hash.
@@ -122,7 +122,7 @@ class Redis
         # @param [String] key
         # @return [Fixnum] number of fields in the hash
         def hlen(key)
-          call(key, [:hlen, key], read: true)
+          call(:hlen, key, read: true)
         end
 
         # Get the values of all the given hash fields.
@@ -135,7 +135,7 @@ class Redis
         # @param [Array<String>] fields array of fields
         # @return [Array<String>] an array of values for the specified fields
         def hmget(key, *fields)
-          call(key, [:hmget, key] + fields, read: true)
+          call(*([:hmget, key] + fields), read: true)
         end
 
         # Returns the string length of the value associated with field in the hash stored at key.
@@ -144,7 +144,7 @@ class Redis
         # @param [String] field
         # @return [Fixnum] String lenght
         def hstrlen(key, field)
-          call(key, [:hstrlen, key, field], read: true)
+          call(:hstrlen, key, field, read: true)
         end
       end
     end

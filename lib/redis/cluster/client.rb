@@ -8,25 +8,18 @@ class Redis
 
     # Client is a decorator object for Redis::Client. It add queue to support pipelining and another
     # useful addition
-    class Client
-      attr_reader :client, :queue, :url
+    class Client < Client      
+      attr_reader :queue, :url
+      alias :close :disconnect
 
       def initialize(opts)
-        @client = Redis::Client.new(opts)
+        super(opts)
         @queue = []
-        @url = "#{client.host}:#{client.port}"
+        @url = "#{scheme}://#{host}:#{port}"
       end
 
       def inspect
-        "#<Redis::Cluster client v#{Redis::Cluster::VERSION} for #{url}>"
-      end
-
-      def connected?
-        client.connected?
-      end
-
-      def close
-        client.disconnect
+        "#<Redis::Cluster::Client v#{Redis::Cluster::VERSION} for #{url}>"
       end
 
       def call(command)
@@ -42,9 +35,9 @@ class Redis
         return nil if queue.empty?
 
         result = Array.new(queue.size)
-        client.process(queue) do
+        process(queue) do
           queue.size.times do |i|
-            result[i] = client.read
+            result[i] = read
           end
         end
         @queue = []

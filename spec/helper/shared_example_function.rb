@@ -8,17 +8,15 @@ shared_examples 'redis function' do |test_table|
   let(:redis_command){ [method] + args }
   let(:transform){ nil }
   let(:destination){ nil }
-  let(:call_args) do
-    if destination.nil?
-      [key, redis_command].tap{ |arg| arg << opts unless opts.empty? }
-    else
-      [[key, destination], redis_command].tap{ |arg| arg << opts unless opts.empty? }
-    end
+  let(:call_args) do    
+    redis_command.tap{ |arg| arg << opts unless opts.empty? }
   end
   let(:opts) do
     {}.tap do |h|
       h[:transform] = transform if transform
       h[:read] = read if read
+      h[:keys] = key if multi_keys
+      h[:keys] = [key, destination] unless destination.nil?
     end
   end
 

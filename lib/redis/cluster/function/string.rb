@@ -23,7 +23,7 @@ class Redis
         # @param [String] key
         # @return [Fixnum] value after decrementing it
         def decr(key)
-          call(key, [:decr, key])
+          call(:decr, key)
         end
 
         # Decrement the integer value of a key by the given number.
@@ -36,7 +36,7 @@ class Redis
         # @param [Fixnum] decrement
         # @return [Fixnum] value after decrementing it
         def decrby(key, decrement)
-          call(key, [:decrby, key, decrement])
+          call(:decrby, key, decrement)
         end
 
         # Increment the integer value of a key by one.
@@ -48,7 +48,7 @@ class Redis
         # @param [String] key
         # @return [Fixnum] value after incrementing it
         def incr(key)
-          call(key, [:incr, key])
+          call(:incr, key)
         end
 
         # Increment the integer value of a key by the given integer number.
@@ -61,7 +61,7 @@ class Redis
         # @param [Fixnum] increment
         # @return [Fixnum] value after incrementing it
         def incrby(key, increment)
-          call(key, [:incrby, key, increment])
+          call(:incrby, key, increment)
         end
 
         # Increment the numeric value of a key by the given float number.
@@ -74,7 +74,7 @@ class Redis
         # @param [Float] increment
         # @return [Float] value after incrementing it
         def incrbyfloat(key, increment)
-          call(key, [:incrbyfloat, key, increment], transform: Redis::Floatify)
+          call(:incrbyfloat, key, increment, transform: Redis::Floatify)
         end
 
         # Set the string value of a key.
@@ -97,7 +97,7 @@ class Redis
           args.concat(['NX']) if options[:nx]
           args.concat(['XX']) if options[:xx]
 
-          call(key, args, transform: Redis::BoolifySet)
+          call(*args, transform: Redis::BoolifySet)
         end
 
         # Set the time to live in seconds of a key.
@@ -107,7 +107,7 @@ class Redis
         # @param [String] value
         # @return [String] `"OK"`
         def setex(key, ttl, value)
-          call(key, [:setex, key, ttl, value.to_s])
+          call(:setex, key, ttl, value.to_s)
         end
 
         # Set the time to live in milliseconds of a key.
@@ -117,7 +117,7 @@ class Redis
         # @param [String] value
         # @return [String] `"OK"`
         def psetex(key, ttl, value)
-          call(key, [:psetex, key, ttl, value.to_s])
+          call(:psetex, key, ttl, value.to_s)
         end
 
         # Set the value of a key, only if the key does not exist.
@@ -126,7 +126,7 @@ class Redis
         # @param [String] value
         # @return [Boolean] whether the key was set or not
         def setnx(key, value)
-          call(key, [:setnx, key, value.to_s], transform: Redis::Boolify)
+          call(:setnx, key, value.to_s, transform: Redis::Boolify)
         end
 
         # Get the value of a key.
@@ -134,7 +134,7 @@ class Redis
         # @param [String] key
         # @return [String]
         def get(key)
-          call(key, [:get, key], read: true)
+          call(:get, key, read: true)
         end
 
         # Overwrite part of a string at key starting at the specified offset.
@@ -144,7 +144,7 @@ class Redis
         # @param [String] value
         # @return [Fixnum] length of the string after it was modified
         def setrange(key, offset, value)
-          call(key, [:setrange, key, offset, value.to_s])
+          call(:setrange, key, offset, value.to_s)
         end
 
         # Get a substring of the string stored at a key.
@@ -155,7 +155,7 @@ class Redis
         #   the end of the string
         # @return [Fixnum] `0` or `1`
         def getrange(key, start, stop)
-          call(key, [:getrange, key, start, stop], read: true)
+          call(:getrange, key, start, stop, read: true)
         end
 
         # Sets or clears the bit at offset in the string value stored at key.
@@ -165,7 +165,7 @@ class Redis
         # @param [Fixnum] value bit value `0` or `1`
         # @return [Fixnum] the original bit value stored at `offset`
         def setbit(key, offset, value)
-          call(key, [:setbit, key, offset, value])
+          call(:setbit, key, offset, value)
         end
 
         # Returns the bit value at offset in the string value stored at key.
@@ -174,7 +174,7 @@ class Redis
         # @param [Fixnum] offset bit offset
         # @return [Fixnum] `0` or `1`
         def getbit(key, offset)
-          call(key, [:getbit, key, offset], read: true)
+          call(:getbit, key, offset, read: true)
         end
 
         # Append a value to a key.
@@ -183,7 +183,7 @@ class Redis
         # @param [String] value value to append
         # @return [Fixnum] length of the string after appending
         def append(key, value)
-          call(key, [:append, key, value])
+          call(:append, key, value)
         end
 
         # Count the number of set bits in a range of the string value stored at key.
@@ -193,7 +193,7 @@ class Redis
         # @param [Fixnum] stop stop index
         # @return [Fixnum] the number of bits set to 1
         def bitcount(key, start = 0, stop = -1)
-          call(key, [:bitcount, key, start, stop], read: true)
+          call(:bitcount, key, start, stop, read: true)
         end
 
         # Return the position of the first bit set to 1 or 0 in a string.
@@ -209,7 +209,7 @@ class Redis
           command << start if start
           command << stop if start && stop
 
-          call(key, command, read: true)
+          call(*command, read: true)
         end
 
         # Set the string value of a key and return its old value.
@@ -219,7 +219,7 @@ class Redis
         # @return [String] the old value stored in the key, or `nil` if the key
         #   did not exist
         def getset(key, value)
-          call(key, [:getset, key, value.to_s])
+          call(:getset, key, value.to_s)
         end
 
         # Get the length of the value stored in a key.
@@ -228,7 +228,7 @@ class Redis
         # @return [Fixnum] the length of the value stored in the key, or 0
         #   if the key does not exist
         def strlen(key)
-          call(key, [:strlen, key], read: true)
+          call(:strlen, key, read: true)
         end
       end
     end

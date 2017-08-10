@@ -13,6 +13,6 @@ describe Redis::Cluster::Client do
   end
 
   describe '#inspect' do
-    it{ expect(subject.inspect).to eql "#<Redis::Cluster client v#{Redis::Cluster::VERSION} for 127.0.0.1:7001>"}
+    it{ expect(subject.inspect).to eql "#<Redis::Cluster::Client v#{Redis::Cluster::VERSION} for redis://127.0.0.1:7001>"}
   end
 end

@@ -27,9 +27,9 @@ SRE Bukalapak
 2. Start `irb`. This command will start a redis-cluster client from seed servers.
 
    ````ruby
-   seed = ['127.0.0.1:7001', '127.0.0.1:7002']
+   nodes = ['redis://127.0.0.1:7001', 'redis://127.0.0.1:7002']
    redis = Redis::Cluster.new(
-                             seed,
+                             nodes,
                              redis_opts: { timeout: 5, connect_timeout: 1 },
                              cluster_opts: { read_mode: :master_slave, silent: true, logger: Logger.new }
                            )
