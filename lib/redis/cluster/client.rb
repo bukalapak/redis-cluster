@@ -51,13 +51,14 @@ class Redis
               exception = reply if exception.nil? && reply.is_a?(CommandError)
             end
           end
-
+          
+          @queue = []
           raise exception if exception
         ensure
+          @queue = []
           @reconnect = reconnect
         end
 
-        result.pop if result.last == "OK"
         result
       end
     end
