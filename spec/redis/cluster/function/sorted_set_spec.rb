@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'redis_cluster/function/sorted_set'
+require 'redis/cluster/function/sorted_set'
 
-describe RedisCluster::Function::SortedSet do
+describe Redis::Cluster::Function::SortedSet do
   describe '#zadd' do
     let(:key){ :wow }
     let(:method){ :zadd }
@@ -13,7 +13,7 @@ describe RedisCluster::Function::SortedSet do
 
       it do
         expect{ subject.public_send(method, *command) }.not_to raise_error
-        expect(subject).to receive(:call).with(key, redis_command, transform: Redis::Boolify).and_return(true)
+        expect(subject).to receive(:call).with(*redis_command, transform: Redis::Boolify).and_return(true)
         subject.public_send(method, *command)
       end
     end
@@ -25,7 +25,7 @@ describe RedisCluster::Function::SortedSet do
 
       it do
         expect{ subject.public_send(method, *command) }.not_to raise_error
-        expect(subject).to receive(:call).with(key, redis_command, transform: nil).and_return(1)
+        expect(subject).to receive(:call).with(*redis_command, transform: nil).and_return(1)
         subject.public_send(method, *command)
       end
     end

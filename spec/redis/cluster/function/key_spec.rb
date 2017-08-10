@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'redis_cluster/function/key'
+require 'redis/cluster/function/key'
 
-describe RedisCluster::Function::Key do
+describe Redis::Cluster::Function::Key do
   include_examples 'redis function', [
     {
       method:        ->{ :del },

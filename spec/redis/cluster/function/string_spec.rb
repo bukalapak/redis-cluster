@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'redis_cluster/function/string'
+require 'redis/cluster/function/string'
 
-describe RedisCluster::Function::String do
+describe Redis::Cluster::Function::String do
   include_examples 'redis function', [
     {
       method:        ->{ :decr },

@@ -2,11 +2,11 @@
 # -*- encoding: utf-8 -*-
 
 $LOAD_PATH.push File.expand_path('../lib', __FILE__)
-require 'redis_cluster/version'
+require 'redis/cluster/version'
 
 Gem::Specification.new do |s|
   s.name              = 'redis-cluster'
-  s.version           = RedisCluster::VERSION
+  s.version           = Redis::Cluster::VERSION
   s.summary           = 'Redis cluster client. Support pipelining.'
   s.authors           = ['Bukalapak']
   s.email             = ['sre@bukalapak.com']
