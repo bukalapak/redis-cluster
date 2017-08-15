@@ -18,6 +18,10 @@ class RedisCluster
       init_client(seeds)
     end
 
+    def force_cluster?
+      options[:force_cluster]
+    end
+
     # Return Redis::Client for a given key.
     # Modified from https://github.com/antirez/redis-rb-cluster/blob/master/cluster.rb#L104-L117
     def slot_for(key)
@@ -75,17 +79,26 @@ class RedisCluster
     def slots_and_clients(client)
       replicas = ::Hash.new{ |h, k| h[k] = [] }
 
-      client.call([:cluster, :slots]).tap do |result|
-        result.each do |arr|
-          arr[2..-1].each_with_index do |a, i|
-            cli = self["#{a[0]}:#{a[1]}"]
-            replicas[arr[0]] << cli
-            cli.call([:readonly]) if i.nonzero?
-          end
+      result = client.call([:cluster, :slots])
+      if result.is_a?(StandardError)
+        if result.message.eql?('ERR This instance has cluster support disabled') &&
+           !force_cluster?
+          host, port = client.url.split(':', 2)
+          result = [[0, HASH_SLOTS - 1, [host, port, nil], [host, port, nil]]]
+        else
+          raise result
+        end
+      end
 
-          (arr[0]..arr[1]).each do |slot|
-            slots[slot] = replicas[arr[0]]
-          end
+      result.each do |arr|
+        arr[2..-1].each_with_index do |a, i|
+          cli = self["#{a[0]}:#{a[1]}"]
+          replicas[arr[0]] << cli
+          cli.call([:readonly]) if i.nonzero?
+        end
+
+        (arr[0]..arr[1]).each do |slot|
+          slots[slot] = replicas[arr[0]]
         end
       end
 
@@ -112,7 +125,10 @@ class RedisCluster
 
     def create_client(url)
       host, port = url.split(':', 2)
-      Client.new(options.merge(host: host, port: port))
+      client_options = options.clone.tap do |opts|
+        opts.delete(:force_update)
+      end
+      Client.new(client_options.merge(host: host, port: port))
     end
 
     # -----------------------------------------------------------------------------

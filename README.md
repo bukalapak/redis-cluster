@@ -31,7 +31,7 @@ SRE Bukalapak
    redis = RedisCluster.new(
                              seed,
                              redis_opts: { timeout: 5, connect_timeout: 1 },
-                             cluster_opts: { read_mode: :master_slave, silent: true, logger: Logger.new }
+                             cluster_opts: { force_cluster: false, read_mode: :master_slave, silent: true, logger: Logger.new }
                            )
    ````
 
@@ -86,6 +86,7 @@ Option for Redis::Client instance. Set timeout, ssl, etc here.
 #### cluster_opts
 
 Option for RedisCluster.
+- `force_cluster`: if true, RedisCluster will only work on clustered Redis or otherwise can also work on standalone Redis. The default value is `false`.
 - `read_mode`: for read command, RedisClient can try to read from slave if specified. Supported option is `:master`(default), `:slave`, and `:master_slave`.
 - `silent`: whether or not RedisCluster will raise error.
 - `logger`: if specified. RedisCluster will log all of RedisCluster errors here.

@@ -45,7 +45,7 @@ describe RedisCluster::Function::List do
       read:          ->{ true }
     }, {
       method:        ->{ :linsert },
-      args:          ->{ [key, :AFTER, :wew, 'value'] },
+      args:          ->{ [key, :AFTER, :pivot, 'value'] },
       redis_result:  ->{ '2' },
       read:          ->{ false }
     }, {
@@ -55,12 +55,12 @@ describe RedisCluster::Function::List do
       read:          ->{ true }
     }, {
       method:        ->{ :lrem },
-      args:          ->{ [key, 0, :wew] },
+      args:          ->{ [key, 0, :value] },
       redis_result:  ->{ 2 },
       read:          ->{ false }
     }, {
       method:        ->{ :lset },
-      args:          ->{ [key, 0, :wew] },
+      args:          ->{ [key, 0, :value] },
       redis_result:  ->{ 'OK' },
       read:          ->{ false }
     }, {

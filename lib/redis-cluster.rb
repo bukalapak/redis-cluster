@@ -15,7 +15,8 @@ class RedisCluster
 
   def initialize(seeds, redis_opts: nil, cluster_opts: nil)
     @options = cluster_opts || {}
-    @cluster = Cluster.new(seeds, redis_opts || {})
+    cluster_options = redis_opts || {}
+    @cluster = Cluster.new(seeds, cluster_options.merge(force_cluster: force_cluster?))
 
     super()
   end
@@ -30,6 +31,10 @@ class RedisCluster
 
   def read_mode
     options[:read_mode] || :master
+  end
+
+  def force_cluster?
+    options[:force_cluster]
   end
 
   def connected?

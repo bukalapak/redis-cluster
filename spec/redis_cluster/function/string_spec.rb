@@ -31,24 +31,24 @@ describe RedisCluster::Function::String do
       read:          ->{ false }
     }, {
       method:        ->{ :set },
-      args:          ->{ [key, 'waw', px: 1000, nx: true] },
-      redis_command: ->{ [method, key, 'waw', 'PX', 1000, 'NX'] },
+      args:          ->{ [key, 'value', px: 1000, nx: true] },
+      redis_command: ->{ [method, key, 'value', 'PX', 1000, 'NX'] },
       redis_result:  ->{ 'OK' },
       transform:     ->{ Redis::BoolifySet },
       read:          ->{ false }
     }, {
       method:        ->{ :setex },
-      args:          ->{ [key, 10, 'waw'] },
+      args:          ->{ [key, 10, 'value'] },
       redis_result:  ->{ 'OK' },
       read:          ->{ false }
     }, {
       method:        ->{ :psetex },
-      args:          ->{ [key, 1000, 'waw'] },
+      args:          ->{ [key, 1000, 'value'] },
       redis_result:  ->{ 'OK' },
       read:          ->{ false }
     }, {
       method:        ->{ :setnx },
-      args:          ->{ [key, 'wow'] },
+      args:          ->{ [key, 'value'] },
       redis_command: ->{ [method] + args },
       redis_result:  ->{ nil },
       transform:     ->{ Redis::Boolify },
@@ -56,17 +56,17 @@ describe RedisCluster::Function::String do
     }, {
       method:        ->{ :get },
       args:          ->{ [key] },
-      redis_result:  ->{ 'wow' },
+      redis_result:  ->{ 'value' },
       read:          ->{ true }
     }, {
       method:        ->{ :setrange },
-      args:          ->{ [key, 1, 'wow'] },
+      args:          ->{ [key, 1, 'value'] },
       redis_result:  ->{ 4 },
       read:          ->{ false }
     }, {
       method:        ->{ :getrange },
       args:          ->{ [key, 0, -1] },
-      redis_result:  ->{ 'wwow' },
+      redis_result:  ->{ 'value' },
       read:          ->{ true }
     }, {
       method:        ->{ :setbit },
@@ -80,8 +80,8 @@ describe RedisCluster::Function::String do
       read:          ->{ true }
     }, {
       method:        ->{ :append },
-      args:          ->{ [key, 'waw'] },
-      redis_result:  ->{ "\x01waw" },
+      args:          ->{ [key, 'value'] },
+      redis_result:  ->{ "\x01value" },
       read:          ->{ false }
     }, {
       method:        ->{ :bitcount },
@@ -96,8 +96,8 @@ describe RedisCluster::Function::String do
       read:          ->{ true }
     }, {
       method:        ->{ :getset },
-      args:          ->{ [key, 'waw'] },
-      redis_result:  ->{ 'wow' },
+      args:          ->{ [key, 'new_value'] },
+      redis_result:  ->{ 'old_value' },
       read:          ->{ false }
     }, {
       method:        ->{ :strlen },
