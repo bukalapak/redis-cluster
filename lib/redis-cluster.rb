@@ -63,9 +63,9 @@ class RedisCluster
   end
 
   def pipelined
-    return yield if pipeline?
-
     safely do
+      return yield if pipeline?
+
       begin
         @pipeline = []
         yield
