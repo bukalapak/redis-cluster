@@ -1,3 +1,6 @@
+## 0.0.9 / 2017-10-02
+* [BUGFIX] Fix race condition in pipeline
+
 ## 0.0.5 / 2017-04-20
 * [BUGFIX] Proper error handling at start-up
 
