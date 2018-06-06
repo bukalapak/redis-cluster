@@ -6,39 +6,27 @@ AllCops:
     - spec/**/*.rb
 
 Lint/HandleExceptions:
-  Enabled: false
+  Enabled: true
 
 Metrics/LineLength:
-  Max: 100
+  Enabled: false
 
 Metrics/MethodLength:
-  Max: 30
+  Enabled: false
 
 Metrics/ClassLength:
-  Max: 200
+  Enabled: false
+
+Metrics/BlockLength:
+  Enabled: false
 
 Metrics/AbcSize:
-  Max: 30
+  Enabled: false
 
 Metrics/CyclomaticComplexity:
-  Max: 11
+  Enabled: false
 
 Metrics/PerceivedComplexity:
-  Max: 12
-
-Style/SpaceInsideBrackets:
-  Enabled: false
-
-Style/SpaceInsideParens:
-  Enabled: false
-
-Style/SpaceAroundOperators:
-  Enabled: false
-
-Style/MutableConstant:
-  Enabled: false
-
-Style/RedundantReturn:
   Enabled: false
 
 Style/EmptyLinesAroundModuleBody:
@@ -47,11 +35,17 @@ Style/EmptyLinesAroundModuleBody:
 Style/EmptyLinesAroundClassBody:
   Enabled: false
 
+Style/EmptyLinesAroundBlockBody:
+  Enabled: false
+
 Style/SpaceBeforeBlockBraces:
   EnforcedStyle: no_space
 
-Style/FileName:
+Style/AsciiComments:
   Enabled: false
 
 Style/Semicolon:
   AllowAsExpressionSeparator: true
+
+Style/FileName:
+  Enabled: false

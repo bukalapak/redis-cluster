@@ -59,7 +59,7 @@ class RedisCluster
       end
       @queue = []
 
-      return result
+      result
     end
   end
 end

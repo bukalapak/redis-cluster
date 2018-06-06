@@ -19,7 +19,7 @@ class RedisCluster
     @redis_opts = redis_opts || {}
     @middlewares = Middlewares.new
 
-    client_creater = self.method(:create_client)
+    client_creater = method(:create_client)
     @cluster = Cluster.new(seeds, cluster_opts, &client_creater)
 
     super()
@@ -157,7 +157,7 @@ class RedisCluster
       futures[url] << future
     end
 
-    return futures
+    futures
   end
 
   def do_pipelined(url, futures)

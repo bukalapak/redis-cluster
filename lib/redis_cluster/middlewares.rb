@@ -18,10 +18,10 @@ class RedisCluster
 
     def invoke(name, *args, &block)
       callback = middlewares[name].reduce(block) do |acc, obs|
-        Proc.new{ obs.call(*args, &acc) }
+        proc{ obs.call(*args, &acc) }
       end
 
-      return callback.call
+      callback.call
     end
   end
 end
