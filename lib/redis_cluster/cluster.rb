@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative 'client'
 
 class RedisCluster
@@ -83,7 +84,7 @@ class RedisCluster
     def slots_and_clients(client)
       replicas = ::Hash.new{ |h, k| h[k] = [] }
 
-      result = client.call([:cluster, :slots])
+      result = client.call(%i[cluster slots])
       if result.is_a?(StandardError)
         if result.message.eql?('ERR This instance has cluster support disabled') &&
            !force_cluster?

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'redis'
 
 require_relative 'redis_cluster/cluster'
@@ -194,12 +195,12 @@ class RedisCluster
       leftover << future
     end
 
-    return [leftover, moved]
+    [leftover, moved]
   rescue Redis::CannotConnectError
     # reset url and asking when connection refused
     futures.each{ |f| f.url = nil; f.asking = false }
 
-    return [futures, true]
+    [futures, true]
   end
 
   def scan_reply(reply)
