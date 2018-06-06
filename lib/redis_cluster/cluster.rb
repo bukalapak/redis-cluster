@@ -9,7 +9,7 @@ class RedisCluster
 
     HASH_SLOTS = 16_384
 
-    def initialize(seeds, cluster_opts, &block)
+    def initialize(seeds, cluster_opts = {}, &block)
       @options = cluster_opts
       @slots = []
       @clients = {}
@@ -21,6 +21,10 @@ class RedisCluster
 
     def force_cluster?
       options[:force_cluster] || false
+    end
+
+    def read_mode
+      options[:read_mode] || :master
     end
 
     # Return Redis::Client for a given key.
@@ -129,7 +133,12 @@ class RedisCluster
     end
 
     def create_client(url)
-      client_creater.call(url)
+      if client_creater
+        client_creater.call(url)
+      else
+        host, port = url.split(':', 2)
+        Client.new(host: host, port: port)
+      end
     end
 
     # -----------------------------------------------------------------------------

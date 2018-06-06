@@ -49,15 +49,15 @@ class RedisCluster
     !@pipeline.nil?
   end
 
-  def call(*args)
+  def call(*args, &block)
     middlewares.invoke(:call, *args) do
-      _call(*args)
+      _call(*args, &block)
     end
   end
 
-  def pipelined
-    middlewares.invoke(:pipelined) do
-      _pipelined
+  def pipelined(*args, &block)
+    middlewares.invoke(:pipelined, *args) do
+      _pipelined(*args, &block)
     end
   end
 
