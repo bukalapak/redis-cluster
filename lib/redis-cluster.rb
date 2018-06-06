@@ -5,36 +5,36 @@ require_relative 'redis_cluster/cluster'
 require_relative 'redis_cluster/client'
 require_relative 'redis_cluster/future'
 require_relative 'redis_cluster/function'
+require_relative 'redis_cluster/middlewares'
 
 # RedisCluster is a client for redis-cluster *huh*
 class RedisCluster
   include MonitorMixin
   include Function
 
-  attr_reader :cluster, :options
+  attr_reader :cluster, :cluster_opts, :redis_opts, :middlewares
 
   def initialize(seeds, redis_opts: nil, cluster_opts: nil)
-    @options = cluster_opts || {}
-    cluster_options = redis_opts || {}
-    @cluster = Cluster.new(seeds, cluster_options.merge(force_cluster: force_cluster?))
+    @cluster_opts = cluster_opts || {}
+    @redis_opts = redis_opts || {}
+    @middlewares = Middlewares.new
+
+    client_creater = self.method(:create_client)
+    @cluster = Cluster.new(seeds, cluster_opts, &client_creater)
 
     super()
   end
 
   def logger
-    options[:logger]
+    cluster_opts[:logger]
   end
 
   def silent?
-    options[:silent]
+    cluster_opts[:silent]
   end
 
   def read_mode
-    options[:read_mode] || :master
-  end
-
-  def force_cluster?
-    options[:force_cluster]
+    cluster_opts[:read_mode] || :master
   end
 
   def connected?
@@ -49,7 +49,24 @@ class RedisCluster
     !@pipeline.nil?
   end
 
-  def call(keys, command, opts = {})
+  def call(*args)
+    middlewares.invoke(:call, *args) do
+      _call(*args)
+    end
+  end
+
+  def pipelined
+    middlewares.invoke(:pipelined) do
+      _pipelined
+    end
+  end
+
+  private
+
+  NOOP = ->(v){ v }
+  CROSSSLOT_ERROR = Redis::CommandError.new("CROSSSLOT Keys in request don't hash to the same slot")
+
+  def _call(keys, command, opts = {})
     opts[:transform] ||= NOOP
     slot = slot_for([ keys ].flatten )
 
@@ -62,7 +79,7 @@ class RedisCluster
     end
   end
 
-  def pipelined
+  def _pipelined
     safely do
       return yield if pipeline?
 
@@ -93,11 +110,6 @@ class RedisCluster
       end
     end
   end
-
-  private
-
-  NOOP = ->(v){ v }
-  CROSSSLOT_ERROR = Redis::CommandError.new("CROSSSLOT Keys in request don't hash to the same slot")
 
   def safely
     synchronize{ yield } if block_given?
@@ -208,6 +220,13 @@ class RedisCluster
       [err.downcase.to_sym, url]
     elsif reply.is_a?(::RuntimeError)
       raise reply
+    end
+  end
+
+  def create_client(url)
+    host, port = url.split(':', 2)
+    Client.new(redis_opts.merge(host: host, port: port)).tap do |c|
+      c.middlewares = middlewares
     end
   end
 end

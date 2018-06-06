@@ -5,21 +5,22 @@ class RedisCluster
 
   # Cluster implement redis cluster logic for client.
   class Cluster
-    attr_reader :options, :slots, :clients, :replicas
+    attr_reader :options, :slots, :clients, :replicas, :client_creater
 
     HASH_SLOTS = 16_384
 
-    def initialize(seeds, options = {})
-      @options = options
+    def initialize(seeds, cluster_opts, &block)
+      @options = cluster_opts
       @slots = []
       @clients = {}
       @replicas = nil
+      @client_creater = block
 
       init_client(seeds)
     end
 
     def force_cluster?
-      options[:force_cluster]
+      options[:force_cluster] || false
     end
 
     # Return Redis::Client for a given key.
@@ -74,6 +75,10 @@ class RedisCluster
       clients[url] ||= create_client(url)
     end
 
+    def inspect
+      "#<RedisCluster cluster v#{RedisCluster::VERSION}>"
+    end
+
     private
 
     def slots_and_clients(client)
@@ -124,11 +129,7 @@ class RedisCluster
     end
 
     def create_client(url)
-      host, port = url.split(':', 2)
-      client_options = options.clone.tap do |opts|
-        opts.delete(:force_update)
-      end
-      Client.new(client_options.merge(host: host, port: port))
+      client_creater.call(url)
     end
 
     # -----------------------------------------------------------------------------

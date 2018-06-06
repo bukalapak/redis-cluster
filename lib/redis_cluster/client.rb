@@ -9,6 +9,7 @@ class RedisCluster
   # useful addition
   class Client
     attr_reader :client, :queue, :url
+    attr_accessor :middlewares
 
     def initialize(opts)
       @client = Redis::Client.new(opts)
@@ -38,6 +39,14 @@ class RedisCluster
     end
 
     def commit
+      middlewares.invoke(:commit, queue.dup) do
+        _commit
+      end
+    end
+
+    private
+
+    def _commit
       return nil if queue.empty?
 
       result = Array.new(queue.size)
