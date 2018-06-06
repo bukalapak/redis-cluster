@@ -123,7 +123,6 @@ describe RedisCluster do
         retry
       end
 
-
       it do
         num_keys = 2
         value = nil

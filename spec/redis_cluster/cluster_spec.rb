@@ -46,6 +46,8 @@ describe RedisCluster::Cluster do
       it do
         expect(subject.slot_for('key')).to eql 12539
         expect(subject.slot_for('key')).to eql subject.slot_for('this{key}is{used}')
+        expect(subject.slot_for(['{key}1', '{key}2'])).to eql 12539
+        expect{ subject.slot_for(['key1', 'key2']) }.to raise_error
       end
     end
 

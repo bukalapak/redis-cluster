@@ -8,6 +8,7 @@ class RedisCluster
     attr_reader :options, :slots, :clients, :replicas, :client_creater
 
     HASH_SLOTS = 16_384
+    CROSSSLOT_ERROR = Redis::CommandError.new("CROSSSLOT Keys in request don't hash to the same slot")
 
     def initialize(seeds, cluster_opts = {}, &block)
       @options = cluster_opts
@@ -23,20 +24,9 @@ class RedisCluster
       options[:force_cluster] || false
     end
 
-    def read_mode
-      options[:read_mode] || :master
-    end
-
-    # Return Redis::Client for a given key.
-    # Modified from https://github.com/antirez/redis-rb-cluster/blob/master/cluster.rb#L104-L117
-    def slot_for(key)
-      key = key.to_s
-      if (s = key.index('{'))
-        if (e = key.index('}', s + 1)) && e != s+1
-          key = key[s+1..e-1]
-        end
-      end
-      crc16(key) % HASH_SLOTS
+    def slot_for(keys)
+      slot = [keys].flatten.map{ |k| _slot_for(k) }.uniq
+      slot.size == 1 ? slot.first : ( raise CROSSSLOT_ERROR )
     end
 
     def master(slot)
@@ -165,6 +155,18 @@ class RedisCluster
         crc = ((crc<<8) & 0xffff) ^ XMODEM_CRC16_LOOKUP[((crc>>8)^b) & 0xff]
       end
       crc
+    end
+
+    # Return Redis::Client for a given key.
+    # Modified from https://github.com/antirez/redis-rb-cluster/blob/master/cluster.rb#L104-L117
+    def _slot_for(key)
+      key = key.to_s
+      if (s = key.index('{'))
+        if (e = key.index('}', s + 1)) && e != s+1
+          key = key[s+1..e-1]
+        end
+      end
+      crc16(key) % HASH_SLOTS
     end
 
     XMODEM_CRC16_LOOKUP = [

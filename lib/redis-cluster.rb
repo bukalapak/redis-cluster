@@ -64,11 +64,10 @@ class RedisCluster
   private
 
   NOOP = ->(v){ v }
-  CROSSSLOT_ERROR = Redis::CommandError.new("CROSSSLOT Keys in request don't hash to the same slot")
 
   def _call(keys, command, opts = {})
     opts[:transform] ||= NOOP
-    slot = slot_for([ keys ].flatten )
+    slot = cluster.slot_for(keys)
 
     safely do
       if pipeline?
@@ -116,11 +115,6 @@ class RedisCluster
   rescue StandardError => e
     logger&.error(e)
     raise e unless silent?
-  end
-
-  def slot_for(keys)
-    slot = keys.map{ |k| cluster.slot_for(k) }.uniq
-    slot.size == 1 ? slot.first : ( raise CROSSSLOT_ERROR )
   end
 
   def call_immediately(slot, command, transform:, read: false)
