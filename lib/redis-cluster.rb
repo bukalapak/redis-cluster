@@ -33,10 +33,6 @@ class RedisCluster
     cluster_opts[:silent]
   end
 
-  def read_mode
-    cluster_opts[:read_mode] || :master
-  end
-
   def connected?
     cluster.connected?
   end
@@ -121,8 +117,8 @@ class RedisCluster
     try = 3
     asking = false
     reply = nil
-    mode = read ? read_mode : :master
-    client = cluster.public_send(mode, slot)
+    mode = read ? :read : :write
+    client = cluster.client_for(mode, slot)
 
     while try.positive?
       begin
@@ -140,7 +136,7 @@ class RedisCluster
       rescue Redis::CannotConnectError => e
         asking = false
         cluster.reset
-        client = cluster.public_send(mode, slot)
+        client = cluster.client_for(mode, slot)
         reply = e
       end
     end
@@ -157,7 +153,7 @@ class RedisCluster
   def map_pipeline(pipe)
     futures = ::Hash.new{ |h, k| h[k] = [] }
     pipe.each do |future|
-      url = future.url || cluster.master(future.slot).url
+      url = future.url || cluster.client_for(:write, future.slot).url
       futures[url] << future
     end
 

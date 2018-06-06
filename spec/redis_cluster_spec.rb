@@ -128,7 +128,7 @@ describe RedisCluster do
         value = nil
         num_keys.times do |k|
           slot = subject.cluster.slot_for("key#{k}")
-          slot_port = subject.cluster.master(slot).url.split(':').last.to_i
+          slot_port = subject.cluster.client_for(:write, slot).url.split(':').last.to_i
           File.new('.circleci/tmp/pid', 'r').each_with_index do |l, i|
             `kill -9 #{l}` if slot_port - 7001 == i
           end

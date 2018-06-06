@@ -51,7 +51,7 @@ describe RedisCluster::Cluster do
       end
     end
 
-    describe '#master/master_slave/slave_for' do
+    describe '#client_for' do
       let(:expected_url) do
         mapping = subject.random.call([:cluster, :slots])
         mapping.each do |arr|
@@ -59,10 +59,28 @@ describe RedisCluster::Cluster do
         end
       end
 
-      it do
-        expect(subject.master(2300).url).to eql expected_url.first
-        expect(expected_url[1..-1].include? subject.slave(2300).url).to be_truthy
-        expect(expected_url.include? subject.master_slave(2300).url).to be_truthy
+      context 'write' do
+        subject{ described_class.new(['127.0.0.1:7001'], read_mode: :master) }
+
+        it{ expect(subject.client_for(:write, 2300).url).to eql expected_url.first }
+      end
+
+      context 'read with read_mode master' do
+        subject{ described_class.new(['127.0.0.1:7001'], read_mode: :master) }
+
+        it{ expect(subject.client_for(:read, 2300).url).to eql expected_url.first }
+      end
+
+      context 'read with read_mode slave' do
+        subject{ described_class.new(['127.0.0.1:7001'], read_mode: :slave) }
+
+        it{ expect(expected_url[1..-1].include? subject.client_for(:read, 2300).url).to be_truthy }
+      end
+
+      context 'read with read_mode master_slave' do
+        subject{ described_class.new(['127.0.0.1:7001'], read_mode: :slave) }
+
+        it{ expect(expected_url.include? subject.client_for(:read, 2300).url).to be_truthy }
       end
     end
   end

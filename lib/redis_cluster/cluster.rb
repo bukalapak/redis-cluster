@@ -24,21 +24,26 @@ class RedisCluster
       options[:force_cluster] || false
     end
 
+    def read_mode
+      options[:read_mode] || :master
+    end
+
     def slot_for(keys)
       slot = [keys].flatten.map{ |k| _slot_for(k) }.uniq
       slot.size == 1 ? slot.first : ( raise CROSSSLOT_ERROR )
     end
 
-    def master(slot)
-      slots[slot].first
-    end
+    def client_for(operation, slot)
+      mode = (operation == :read) ? read_mode : :master
 
-    def slave(slot)
-      slots[slot][1..-1].sample || slots[slot].first
-    end
-
-    def master_slave(slot)
-      slots[slot].sample
+      case mode
+      when :master
+        slots[slot].first
+      when :slave
+        slots[slot][1..-1].sample || slots[slot].first
+      when :master_slave
+        slots[slot].sample
+      end
     end
 
     def close
