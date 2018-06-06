@@ -1,3 +1,6 @@
+## Unreleased
+- [FEATURE] Middleware support
+
 ## 0.0.9 / 2017-10-02
 * [BUGFIX] Fix race condition in pipeline
 
