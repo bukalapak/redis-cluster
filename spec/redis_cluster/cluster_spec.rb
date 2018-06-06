@@ -78,7 +78,7 @@ describe RedisCluster::Cluster do
       end
 
       context 'read with read_mode master_slave' do
-        subject{ described_class.new(['127.0.0.1:7001'], read_mode: :slave) }
+        subject{ described_class.new(['127.0.0.1:7001'], read_mode: :master_slave) }
 
         it{ expect(expected_url.include? subject.client_for(:read, 2300).url).to be_truthy }
       end

@@ -153,6 +153,24 @@ describe RedisCluster do
     end
   end
 
+  describe '#middlewares' do
+    it 'can have middlewares' do
+      action = []
+      [:commit, :pipelined, :call].each do |act|
+        subject.middlewares.register(act) do |*args, &block|
+          action << act
+          block.call
+        end
+      end
+
+      subject.pipelined do
+        subject.call('something', [:get, 'something'])
+      end
+
+      expect(action).to eq [:pipelined, :call, :commit]
+    end
+  end
+
   it 'can handle race condition' do
     subject.call('key', [:set, 'key', 'value'])
 

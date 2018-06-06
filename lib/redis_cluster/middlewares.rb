@@ -13,7 +13,7 @@ class RedisCluster
     def register(name, callable = nil, &block)
       return if !callable && !block_given?
 
-      middlewares[name] << callable || block
+      middlewares[name] << (callable || block)
     end
 
     def invoke(name, *args, &block)
