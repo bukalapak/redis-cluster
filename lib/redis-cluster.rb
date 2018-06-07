@@ -47,13 +47,13 @@ class RedisCluster
   end
 
   def call(*args, &block)
-    middlewares.invoke(:call, *args) do
+    middlewares.invoke(:call, self, *args) do
       _call(*args, &block)
     end
   end
 
   def pipelined(*args, &block)
-    middlewares.invoke(:pipelined, *args) do
+    middlewares.invoke(:pipelined, self, *args) do
       _pipelined(*args, &block)
     end
   end
