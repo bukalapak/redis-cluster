@@ -1,4 +1,4 @@
-## Unreleased
+## 1.0.0 [rc] / 2018-06-07
 - [FEATURE] Middleware support
 
 ## 0.0.9 / 2017-10-02
