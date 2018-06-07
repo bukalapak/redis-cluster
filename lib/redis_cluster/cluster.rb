@@ -1,49 +1,50 @@
 # frozen_string_literal: true
+
 require_relative 'client'
 
 class RedisCluster
 
   # Cluster implement redis cluster logic for client.
   class Cluster
-    attr_reader :options, :slots, :clients, :replicas
+    attr_reader :options, :slots, :clients, :replicas, :client_creater
 
     HASH_SLOTS = 16_384
+    CROSSSLOT_ERROR = Redis::CommandError.new("CROSSSLOT Keys in request don't hash to the same slot")
 
-    def initialize(seeds, options = {})
-      @options = options
+    def initialize(seeds, cluster_opts = {}, &block)
+      @options = cluster_opts
       @slots = []
       @clients = {}
       @replicas = nil
+      @client_creater = block
 
       init_client(seeds)
     end
 
     def force_cluster?
-      options[:force_cluster]
+      options[:force_cluster] || false
     end
 
-    # Return Redis::Client for a given key.
-    # Modified from https://github.com/antirez/redis-rb-cluster/blob/master/cluster.rb#L104-L117
-    def slot_for(key)
-      key = key.to_s
-      if (s = key.index('{'))
-        if (e = key.index('}', s + 1)) && e != s+1
-          key = key[s+1..e-1]
-        end
+    def read_mode
+      options[:read_mode] || :master
+    end
+
+    def slot_for(keys)
+      slot = [keys].flatten.map{ |k| _slot_for(k) }.uniq
+      slot.size == 1 ? slot.first : (raise CROSSSLOT_ERROR)
+    end
+
+    def client_for(operation, slot)
+      mode = operation == :read ? read_mode : :master
+
+      case mode
+      when :master
+        slots[slot].first
+      when :slave
+        slots[slot][1..-1].sample || slots[slot].first
+      when :master_slave
+        slots[slot].sample
       end
-      crc16(key) % HASH_SLOTS
-    end
-
-    def master(slot)
-      slots[slot].first
-    end
-
-    def slave(slot)
-      slots[slot][1..-1].sample || slots[slot].first
-    end
-
-    def master_slave(slot)
-      slots[slot].sample
     end
 
     def close
@@ -66,7 +67,7 @@ class RedisCluster
         slots_and_clients(client)
       rescue StandardError => e
         clients.delete(client.url)
-        try.positive? ? retry : ( raise e )
+        try.positive? ? retry : (raise e)
       end
     end
 
@@ -74,12 +75,16 @@ class RedisCluster
       clients[url] ||= create_client(url)
     end
 
+    def inspect
+      "#<RedisCluster cluster v#{RedisCluster::VERSION}>"
+    end
+
     private
 
     def slots_and_clients(client)
       replicas = ::Hash.new{ |h, k| h[k] = [] }
 
-      result = client.call([:cluster, :slots])
+      result = client.call(%i[cluster slots])
       if result.is_a?(StandardError)
         if result.message.eql?('ERR This instance has cluster support disabled') &&
            !force_cluster?
@@ -124,11 +129,12 @@ class RedisCluster
     end
 
     def create_client(url)
-      host, port = url.split(':', 2)
-      client_options = options.clone.tap do |opts|
-        opts.delete(:force_update)
+      if client_creater
+        client_creater.call(url)
+      else
+        host, port = url.split(':', 2)
+        Client.new(host: host, port: port)
       end
-      Client.new(client_options.merge(host: host, port: port))
     end
 
     # -----------------------------------------------------------------------------
@@ -152,9 +158,21 @@ class RedisCluster
     def crc16(bytes)
       crc = 0
       bytes.each_byte do |b|
-        crc = ((crc<<8) & 0xffff) ^ XMODEM_CRC16_LOOKUP[((crc>>8)^b) & 0xff]
+        crc = ((crc << 8) & 0xffff) ^ XMODEM_CRC16_LOOKUP[((crc >> 8) ^ b) & 0xff]
       end
       crc
+    end
+
+    # Return Redis::Client for a given key.
+    # Modified from https://github.com/antirez/redis-rb-cluster/blob/master/cluster.rb#L104-L117
+    def _slot_for(key)
+      key = key.to_s
+      if (s = key.index('{'))
+        if (e = key.index('}', s + 1)) && e != s + 1
+          key = key[s + 1..e - 1]
+        end
+      end
+      crc16(key) % HASH_SLOTS
     end
 
     XMODEM_CRC16_LOOKUP = [
@@ -190,6 +208,6 @@ class RedisCluster
       0x7c26, 0x6c07, 0x5c64, 0x4c45, 0x3ca2, 0x2c83, 0x1ce0, 0x0cc1,
       0xef1f, 0xff3e, 0xcf5d, 0xdf7c, 0xaf9b, 0xbfba, 0x8fd9, 0x9ff8,
       0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0
-    ]
+    ].freeze
   end
 end

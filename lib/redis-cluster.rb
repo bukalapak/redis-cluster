@@ -1,40 +1,37 @@
 # frozen_string_literal: true
+
 require 'redis'
 
 require_relative 'redis_cluster/cluster'
 require_relative 'redis_cluster/client'
 require_relative 'redis_cluster/future'
 require_relative 'redis_cluster/function'
+require_relative 'redis_cluster/middlewares'
 
 # RedisCluster is a client for redis-cluster *huh*
 class RedisCluster
   include MonitorMixin
   include Function
 
-  attr_reader :cluster, :options
+  attr_reader :cluster, :cluster_opts, :redis_opts, :middlewares
 
   def initialize(seeds, redis_opts: nil, cluster_opts: nil)
-    @options = cluster_opts || {}
-    cluster_options = redis_opts || {}
-    @cluster = Cluster.new(seeds, cluster_options.merge(force_cluster: force_cluster?))
+    @cluster_opts = cluster_opts || {}
+    @redis_opts = redis_opts || {}
+    @middlewares = Middlewares.new
+
+    client_creater = method(:create_client)
+    @cluster = Cluster.new(seeds, cluster_opts, &client_creater)
 
     super()
   end
 
   def logger
-    options[:logger]
+    cluster_opts[:logger]
   end
 
   def silent?
-    options[:silent]
-  end
-
-  def read_mode
-    options[:read_mode] || :master
-  end
-
-  def force_cluster?
-    options[:force_cluster]
+    cluster_opts[:silent]
   end
 
   def connected?
@@ -49,9 +46,25 @@ class RedisCluster
     !@pipeline.nil?
   end
 
-  def call(keys, command, opts = {})
+  def call(*args, &block)
+    middlewares.invoke(:call, *args) do
+      _call(*args, &block)
+    end
+  end
+
+  def pipelined(*args, &block)
+    middlewares.invoke(:pipelined, *args) do
+      _pipelined(*args, &block)
+    end
+  end
+
+  private
+
+  NOOP = ->(v){ v }
+
+  def _call(keys, command, opts = {})
     opts[:transform] ||= NOOP
-    slot = slot_for([ keys ].flatten )
+    slot = cluster.slot_for(keys)
 
     safely do
       if pipeline?
@@ -62,7 +75,7 @@ class RedisCluster
     end
   end
 
-  def pipelined
+  def _pipelined
     safely do
       return yield if pipeline?
 
@@ -94,11 +107,6 @@ class RedisCluster
     end
   end
 
-  private
-
-  NOOP = ->(v){ v }
-  CROSSSLOT_ERROR = Redis::CommandError.new("CROSSSLOT Keys in request don't hash to the same slot")
-
   def safely
     synchronize{ yield } if block_given?
   rescue StandardError => e
@@ -106,17 +114,12 @@ class RedisCluster
     raise e unless silent?
   end
 
-  def slot_for(keys)
-    slot = keys.map{ |k| cluster.slot_for(k) }.uniq
-    slot.size == 1 ? slot.first : ( raise CROSSSLOT_ERROR )
-  end
-
   def call_immediately(slot, command, transform:, read: false)
     try = 3
     asking = false
     reply = nil
-    mode = read ? read_mode : :master
-    client = cluster.public_send(mode, slot)
+    mode = read ? :read : :write
+    client = cluster.client_for(mode, slot)
 
     while try.positive?
       begin
@@ -134,7 +137,7 @@ class RedisCluster
       rescue Redis::CannotConnectError => e
         asking = false
         cluster.reset
-        client = cluster.public_send(mode, slot)
+        client = cluster.client_for(mode, slot)
         reply = e
       end
     end
@@ -151,11 +154,11 @@ class RedisCluster
   def map_pipeline(pipe)
     futures = ::Hash.new{ |h, k| h[k] = [] }
     pipe.each do |future|
-      url = future.url || cluster.master(future.slot).url
+      url = future.url || cluster.client_for(:write, future.slot).url
       futures[url] << future
     end
 
-    return futures
+    futures
   end
 
   def do_pipelined(url, futures)
@@ -192,12 +195,12 @@ class RedisCluster
       leftover << future
     end
 
-    return [leftover, moved]
+    [leftover, moved]
   rescue Redis::CannotConnectError
     # reset url and asking when connection refused
     futures.each{ |f| f.url = nil; f.asking = false }
 
-    return [futures, true]
+    [futures, true]
   end
 
   def scan_reply(reply)
@@ -208,6 +211,13 @@ class RedisCluster
       [err.downcase.to_sym, url]
     elsif reply.is_a?(::RuntimeError)
       raise reply
+    end
+  end
+
+  def create_client(url)
+    host, port = url.split(':', 2)
+    Client.new(redis_opts.merge(host: host, port: port)).tap do |c|
+      c.middlewares = middlewares
     end
   end
 end

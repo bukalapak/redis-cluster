@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'redis'
 
 class RedisCluster
@@ -73,7 +74,7 @@ class RedisCluster
       # @param [Hash] options
       #   - `:match => String`: only return keys matching the pattern
       #   - `:count => Integer`: return count keys at most per iteration
-      [:zscan, :hscan, :sscan].each do |method|
+      %i[zscan hscan sscan].each do |method|
         define_method "#{method}_each" do |key, options = {}, &block|
           return if block.nil?
 

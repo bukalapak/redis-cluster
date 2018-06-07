@@ -123,13 +123,12 @@ describe RedisCluster do
         retry
       end
 
-
       it do
         num_keys = 2
         value = nil
         num_keys.times do |k|
           slot = subject.cluster.slot_for("key#{k}")
-          slot_port = subject.cluster.master(slot).url.split(':').last.to_i
+          slot_port = subject.cluster.client_for(:write, slot).url.split(':').last.to_i
           File.new('.circleci/tmp/pid', 'r').each_with_index do |l, i|
             `kill -9 #{l}` if slot_port - 7001 == i
           end
@@ -151,6 +150,24 @@ describe RedisCluster do
           expect(tested_value).to eq "value#{k}"
         end
       end
+    end
+  end
+
+  describe '#middlewares' do
+    it 'can have middlewares' do
+      action = []
+      [:commit, :pipelined, :call].each do |act|
+        subject.middlewares.register(act) do |*args, &block|
+          action << act
+          block.call
+        end
+      end
+
+      subject.pipelined do
+        subject.call('something', [:get, 'something'])
+      end
+
+      expect(action).to eq [:pipelined, :call, :commit]
     end
   end
 

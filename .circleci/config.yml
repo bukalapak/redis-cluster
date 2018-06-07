@@ -24,8 +24,8 @@ jobs:
           key: "redis-3.2.8"
 
       - run: mkdir .circleci/tmp
-      - run: rake start
+      - run: bundle exec rake start
 
-      - run: rake test
-      - run: rake lint
+      - run: bundle exec rake test
+      - run: bundle exec rake lint
 
