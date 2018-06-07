@@ -100,8 +100,9 @@ Option for RedisCluster.
 Middlewares are hooks that RedisCluster provide to observe RedisCluster events. To register a middlewares, provide callable object (object that respond to call)
 or give block in register method. Middlewares must give block result as return value.
 ````ruby
+# Using callable
 class Callable
-  call
+  def call
     start = Time.now
     yield
   rescue StandardError => e
@@ -112,6 +113,7 @@ class Callable
 end
 redis.middlewares.register(:commit, Callable.new)
 
+# Using proc
 redis.middlewares.register(:commit) do |*args, &block|
   begin
     res = block.call
@@ -126,21 +128,23 @@ end
 
 Currently there are 3 events that RedisCluster publish.
 - `:commit`
-  RedisCluster will fire `:commit` events when RedisCluster::Client call redis server. It give queue of command as arguments.
+  RedisCluster will fire `:commit` events when RedisCluster::Client call redis server. It give `RedisCluster::Client` as arguments.
   ````ruby
-  redis.middlewares.register(:commit) do |queues, &block|
+  redis.middlewares.register(:commit) do |client, &block|
     puts 'this is :commit events'
-    puts "first command: #{queues.first.first}
-    puts "last command: #{queues.last.first}
+    puts "client url: #{client.url}"
+    puts "first command: #{client.queue.first.first}"
+    puts "last command: #{client.queue.last.first}"
     block.call
   end
   ````
 - `:call`
-  This events is fired when command is issued in RedisCluster client before any load balancing is done. It give call arguments as arguments
+  This events is fired when command is issued in RedisCluster client before any load balancing is done. It give `RedisCluster` and `RedisCluster#call` arguments as arguments
   ````ruby
-  redis.middlewares.register(:call) do |keys, command, opts = {}, &block|
+  redis.middlewares.register(:call) do |client, keys, command, opts = {}, &block|
     puts "keys to load balance: #{keys}"
     puts "redis command: #{command.first}"
+    puts "in pipelined?: #{client.pipelined?}"
     block.call
   end
   redis.get('something')
@@ -149,9 +153,9 @@ Currently there are 3 events that RedisCluster publish.
   #   redis command: get
   ````
 - `:pipelined`
-  This events is fired when pipelined method is called from redis client. It does not give any arguments
+  This events is fired when pipelined method is called from redis client. It does give `RedisCluster` as arguments
   ````ruby
-  redis.middlewares.register(:pipelined) do |&block|
+  redis.middlewares.register(:pipelined) do |client, &block|
     puts 'pipelined is called'
     block.call
   end

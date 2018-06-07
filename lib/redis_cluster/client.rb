@@ -42,7 +42,7 @@ class RedisCluster
     def commit
       return _commit unless middlewares
 
-      middlewares.invoke(:commit, queue.dup) do
+      middlewares.invoke(:commit, self) do
         _commit
       end
     end
