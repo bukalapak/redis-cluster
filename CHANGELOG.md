@@ -1,5 +1,6 @@
 ## 1.0.0 [rc] / 2018-06-07
 - [FEATURE] Middleware support
+- [BUGFIX] Exclue slave instance in LOADING state from client candidate.
 
 ## 0.0.9 / 2017-10-02
 * [BUGFIX] Fix race condition in pipeline
