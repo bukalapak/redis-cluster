@@ -41,9 +41,9 @@ class RedisCluster
       when :master
         slots[slot].first
       when :slave
-        slots[slot][1..-1].sample || slots[slot].first
+        slots[slot][1..-1].select(&:healthy).sample || slots[slot].first
       when :master_slave
-        slots[slot].sample
+        slots[slot].select(&:healthy).sample
       end
     end
 

@@ -16,6 +16,9 @@ class RedisCluster
       @client = Redis::Client.new(opts)
       @queue = []
       @url = "#{client.host}:#{client.port}"
+
+      @loading = false
+      @ban_from = nil
     end
 
     def inspect
@@ -47,6 +50,18 @@ class RedisCluster
       end
     end
 
+    def healthy
+      return true unless @loading
+
+      # ban for 60 seconds for loading state
+      if Time.now - @ban_from > 60
+        @loading = false
+        @ban_from = nil
+      end
+
+      !@loading
+    end
+
     private
 
     def _commit
@@ -59,6 +74,11 @@ class RedisCluster
         end
       end
       @queue = []
+
+      if result.last.is_a?(Redis::CommandError) && result.last.message['LOADING']
+        @loading = true
+        @ban_from = Time.now
+      end
 
       result
     end
