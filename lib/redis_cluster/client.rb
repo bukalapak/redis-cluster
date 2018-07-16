@@ -6,6 +6,8 @@ require_relative 'version'
 
 class RedisCluster
 
+  class LoadingStateError < StandardError; end
+
   # Client is a decorator object for Redis::Client. It add queue to support pipelining and another
   # useful addition
   class Client
@@ -17,7 +19,7 @@ class RedisCluster
       @queue = []
       @url = "#{client.host}:#{client.port}"
 
-      @loading = false
+      @healthy = true
       @ban_from = nil
     end
 
@@ -51,15 +53,15 @@ class RedisCluster
     end
 
     def healthy
-      return true unless @loading
+      return true if @healthy
 
-      # ban for 60 seconds for loading state
+      # ban for 60 seconds for unhealthy state
       if Time.now - @ban_from > 60
-        @loading = false
+        @healthy = true
         @ban_from = nil
       end
 
-      !@loading
+      @healthy
     end
 
     private
@@ -71,16 +73,20 @@ class RedisCluster
       client.process(queue) do
         queue.size.times do |i|
           result[i] = client.read
-        end
-      end
-      @queue = []
 
-      if result.last.is_a?(Redis::CommandError) && result.last.message['LOADING']
-        @loading = true
-        @ban_from = Time.now
+          unhealthy! if result[i].is_a?(Redis::CommandError) && result[i].message['LOADING']
+        end
       end
 
       result
+    ensure
+      @queue = []
+    end
+
+    def unhealthy!
+      @healthy = false
+      @ban_from = Time.now
+      raise LoadingStateError
     end
   end
 end

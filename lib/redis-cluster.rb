@@ -91,8 +91,8 @@ class RedisCluster
 
           @pipeline = []
           mapped_future.each do |url, futures|
-            leftover, move = do_pipelined(url, futures)
-            moved ||= move
+            leftover, error = do_pipelined(url, futures)
+            moved ||= (error == :moved || error == :down)
 
             @pipeline.concat(leftover)
           end
@@ -134,9 +134,11 @@ class RedisCluster
         cluster.reset if err == :moved
         asking = err == :ask
         client = cluster[url]
-      rescue Redis::CannotConnectError => e
-        asking = false
-        cluster.reset
+      rescue LoadingStateError, Redis::CannotConnectError => e
+        if e.is_a?(Redis::CannotConnectError)
+          asking = false
+          cluster.reset
+        end
         client = cluster.client_for(mode, slot)
         reply = e
       end
@@ -162,7 +164,7 @@ class RedisCluster
   end
 
   def do_pipelined(url, futures)
-    moved = false
+    error = nil
     leftover = []
 
     rev_index = {}
@@ -189,18 +191,18 @@ class RedisCluster
       err, url = scan_reply(reply)
       next unless err
 
-      moved ||= err == :moved
+      error ||= :moved if err == :moved
       future.asking = err == :ask
       future.url = url
       leftover << future
     end
 
-    [leftover, moved]
-  rescue Redis::CannotConnectError
+    [leftover, error]
+  rescue LoadingStateError, Redis::CannotConnectError => e
     # reset url and asking when connection refused
     futures.each{ |f| f.url = nil; f.asking = false }
 
-    [futures, true]
+    [futures, e.is_a?(LoadingStateError) ? :loading : :down]
   end
 
   def scan_reply(reply)
