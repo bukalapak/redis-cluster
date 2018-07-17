@@ -18,6 +18,7 @@ class RedisCluster
       @replicas = nil
       @client_creater = block
 
+      @buffer = []
       init_client(seeds)
     end
 
@@ -41,9 +42,9 @@ class RedisCluster
       when :master
         slots[slot].first
       when :slave
-        slots[slot][1..-1].select(&:healthy).sample || slots[slot].first
+        pick_client(slots[slot], skip: 1) || slots[slot].first
       when :master_slave
-        slots[slot].select(&:healthy).sample
+        pick_client(slots[slot])
       end
     end
 
@@ -81,6 +82,24 @@ class RedisCluster
 
     private
 
+    def pick_client(pool, skip: 0)
+      unhealthy_count = 0
+
+      (skip...pool.length).each do |i|
+        if pool[i].healthy
+          @buffer[i - skip] = pool[i]
+        else
+          unhealthy_count += 1
+        end
+      end
+
+      buffer_length = pool.length - skip - unhealthy_count
+      return nil if buffer_length.zero?
+
+      i = rand(buffer_length)
+      @buffer[i]
+    end
+
     def slots_and_clients(client)
       replicas = ::Hash.new{ |h, k| h[k] = [] }
 
@@ -107,6 +126,7 @@ class RedisCluster
         end
       end
 
+      @buffer = Array.new(clients.length) if clients.length > @buffer.length
       @replicas = replicas
     end
 
