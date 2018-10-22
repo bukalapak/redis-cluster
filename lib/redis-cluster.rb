@@ -134,7 +134,7 @@ class RedisCluster
         cluster.reset if err == :moved
         asking = err == :ask
         client = cluster[url]
-      rescue LoadingStateError, Redis::CannotConnectError => e
+      rescue NodeUnhealthyError, Redis::CannotConnectError => e
         if e.is_a?(Redis::CannotConnectError)
           asking = false
           cluster.reset
@@ -198,11 +198,11 @@ class RedisCluster
     end
 
     [leftover, error]
-  rescue LoadingStateError, Redis::CannotConnectError => e
+  rescue NodeUnhealthyError, Redis::CannotConnectError => e
     # reset url and asking when connection refused
     futures.each{ |f| f.url = nil; f.asking = false }
 
-    [futures, e.is_a?(LoadingStateError) ? :loading : :down]
+    [futures, e.is_a?(NodeUnhealthyError) ? :loading : :down]
   end
 
   def scan_reply(reply)

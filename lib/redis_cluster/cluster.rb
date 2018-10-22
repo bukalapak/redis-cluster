@@ -16,7 +16,10 @@ class RedisCluster
       @slots = []
       @clients = {}
       @replicas = nil
-      @client_creater = block
+      @client_creater = block || Proc.new do |url|
+        host, port = url.split(':', 2)
+        Client.new(host: host, port: port)
+      end
 
       @buffer = []
       init_client(seeds)
@@ -28,6 +31,10 @@ class RedisCluster
 
     def read_mode
       options[:read_mode] || :master
+    end
+
+    def logger
+      options[:logger]
     end
 
     def slot_for(keys)
@@ -67,7 +74,6 @@ class RedisCluster
         client = random
         slots_and_clients(client)
       rescue StandardError => e
-        clients.delete(client.url)
         try.positive? ? retry : (raise e)
       end
     end
@@ -83,20 +89,18 @@ class RedisCluster
     private
 
     def pick_client(pool, skip: 0)
-      unhealthy_count = 0
+      buff_len = 0
 
       (skip...pool.length).each do |i|
-        if pool[i].healthy
-          @buffer[i - skip] = pool[i]
-        else
-          unhealthy_count += 1
-        end
+        next unless pool[i].healthy?
+
+        @buffer[buff_len] = pool[i]
+        buff_len += 1
       end
 
-      buffer_length = pool.length - skip - unhealthy_count
-      return nil if buffer_length.zero?
+      return nil if buff_len.zero?
 
-      i = rand(buffer_length)
+      i = rand(buff_len)
       @buffer[i]
     end
 
@@ -118,7 +122,11 @@ class RedisCluster
         arr[2..-1].each_with_index do |a, i|
           cli = self["#{a[0]}:#{a[1]}"]
           replicas[arr[0]] << cli
-          cli.call([:readonly]) if i.nonzero?
+          begin
+            cli.call([:readonly]) if i.nonzero?
+          rescue NodeUnhealthyError => e
+            logger&.error(e)
+          end
         end
 
         (arr[0]..arr[1]).each do |slot|
@@ -149,12 +157,7 @@ class RedisCluster
     end
 
     def create_client(url)
-      if client_creater
-        client_creater.call(url)
-      else
-        host, port = url.split(':', 2)
-        Client.new(host: host, port: port)
-      end
+      client_creater.call(url)
     end
 
     # -----------------------------------------------------------------------------
