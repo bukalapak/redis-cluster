@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    redis-cluster (1.0.0)
+    redis-cluster (1.0.1.pre.rc.1)
       redis (~> 3.0)
 
 GEM
@@ -28,7 +28,7 @@ GEM
       slop (~> 3.4)
     rainbow (3.0.0)
     rake (11.2.2)
-    redis (3.3.3)
+    redis (3.3.5)
     rspec (3.5.0)
       rspec-core (~> 3.5.0)
       rspec-expectations (~> 3.5.0)
@@ -73,4 +73,4 @@ DEPENDENCIES
   simplecov
 
 BUNDLED WITH
-   1.14.6
+   1.16.2
