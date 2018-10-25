@@ -1,6 +1,9 @@
-## 1.0.0 [rc] / 2018-06-07
+## 1.0.1[rc] / 2018-10-25
+- [BUGFIX] Better LOADING state and CLUSTERDOWN error handling.
+
+## 1.0.0 / 2018-06-07
 - [FEATURE] Middleware support
-- [BUGFIX] Exclue slave instance in LOADING state from client candidate.
+- [BUGFIX] Exclude slave instance in LOADING state from client candidate.
 
 ## 0.0.9 / 2017-10-02
 * [BUGFIX] Fix race condition in pipeline
