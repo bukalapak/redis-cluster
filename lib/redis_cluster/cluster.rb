@@ -16,7 +16,7 @@ class RedisCluster
       @slots = []
       @clients = {}
       @replicas = nil
-      @client_creater = block || Proc.new do |url|
+      @client_creater = block || proc do |url|
         host, port = url.split(':', 2)
         Client.new(host: host, port: port)
       end
