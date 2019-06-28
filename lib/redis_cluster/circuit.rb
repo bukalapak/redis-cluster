@@ -21,7 +21,7 @@ class RedisCluster
     def failed
       @fail_count = 0 if (@last_fail_time + @interval_time).utc < Time.now
       @fail_count += 1
-      open! if check_threshold
+      open! if @fail_count >= @fail_threshold
     end
 
     def open!
@@ -31,12 +31,6 @@ class RedisCluster
     def open?
       return false if @ban_until < Time.now
       true
-    end
-
-    private
-
-    def check_threshold
-      @fail_count >= @fail_threshold
     end
 
   end
