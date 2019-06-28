@@ -13,6 +13,7 @@ describe RedisCluster::Circuit do
       expect(@circuit.fail_count).to eq 1
     end
     it 'can open after 5 fail' do
+      expect(@circuit.open?).to eq false
       @circuit.failed
       @circuit.failed
       @circuit.failed
@@ -24,6 +25,7 @@ describe RedisCluster::Circuit do
   
   describe 'open' do
   	it 'can increase ban time' do
+  	  expect(@circuit.open?).to eq false
   	  @circuit.open!
   	  expect(@circuit.ban_until).to be > Time.now
   	  expect(@circuit.open?).to eq true
