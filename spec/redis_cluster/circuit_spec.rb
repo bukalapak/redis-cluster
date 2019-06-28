@@ -4,31 +4,31 @@ require 'pry'
 
 describe RedisCluster::Circuit do
   before(:each) do
-  	@circuit = RedisCluster::Circuit.new
+    subject{ described_class.new }
   end
 
   describe 'fail' do
     it 'can up fail' do
-      @circuit.failed
-      expect(@circuit.fail_count).to eq 1
+      subject.failed
+      expect(subject.fail_count).to eq 1
     end
     it 'can open after 5 fail' do
-      expect(@circuit.open?).to eq false
-      @circuit.failed
-      @circuit.failed
-      @circuit.failed
-      @circuit.failed
-      @circuit.failed
-      expect(@circuit.open?).to eq true
+      expect(subject.open?).to eq false
+      subject.failed
+      subject.failed
+      subject.failed
+      subject.failed
+      subject.failed
+      expect(subject.open?).to eq true
     end
   end
   
   describe 'open' do
   	it 'can increase ban time' do
-  	  expect(@circuit.open?).to eq false
-  	  @circuit.open!
-  	  expect(@circuit.ban_until).to be > Time.now
-  	  expect(@circuit.open?).to eq true
+  	  expect(subject.open?).to eq false
+  	  subject.open!
+  	  expect(subject.ban_until).to be > Time.now
+  	  expect(subject.open?).to eq true
   	end
   end
 end
