@@ -3,7 +3,7 @@ require 'redis_cluster/circuit'
 require 'pry'
 
 describe RedisCluster::Circuit do
-  subject{ described_class.new }
+  subject{ described_class.new(5, 5) }
 
   describe '#failed' do
     it 'can up fail_count' do
