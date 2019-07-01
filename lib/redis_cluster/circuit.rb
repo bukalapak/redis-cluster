@@ -7,26 +7,18 @@ class RedisCluster
 
     attr_reader :fail_count, :ban_until
 
-    DEFAULT_CONFIG = {
-      threshold: 5,
-      interval: 60
-    }.freeze
-
-    def initialize(&block)
-      super(&block)
-      @config = DEFAULT_CONFIG.dup
-      yield(config) if block_given?
-
+    def initialize(threshold, interval)
       @ban_until = Time.now
       @fail_count = 0
       @last_fail_time = Time.now
-      @fail_threshold = @config[:threshold]
-      @interval_time = @config[:interval]
+      @fail_threshold = threshold 
+      @interval_time = interval 
     end
 
     def failed
       @fail_count = 0 if (@last_fail_time + @interval_time).utc < Time.now
       @fail_count += 1
+      @last_fail_time = Time.now
       open! if @fail_count >= @fail_threshold
     end
 
