@@ -37,8 +37,7 @@ class RedisCluster
     #
     # @return[Boolean] Wheter the circuit is open or not
     def open?
-      return false if @ban_until <= Time.now
-      true
+      @ban_until > Time.now
     end
 
   end
