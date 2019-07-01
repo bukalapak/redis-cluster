@@ -17,6 +17,7 @@ class RedisCluster
       @clients = {}
       @replicas = nil
       @client_creater = block
+      @last_reset = Time.now - reset_interval
 
       @buffer = []
       init_client(seeds)
@@ -28,6 +29,13 @@ class RedisCluster
 
     def read_mode
       options[:read_mode] || :master
+    end
+
+    # Reset_interval return interval in second which reset can happen. A reset can only happen once per reset_interval.
+    #
+    # @return [Fixnum] reset interval
+    def reset_interval
+      options[:reset_interval].to_f
     end
 
     def slot_for(keys)
@@ -60,16 +68,25 @@ class RedisCluster
       clients.values.sample
     end
 
-    def reset
+    # Reset will reload cluster topology. Reset will only be executed once per reset_interval if not forced.
+    #
+    # @param [Boolean] force: Whether to force reset to happen or not.
+    # @return [void]
+    def reset(force: false)
+      return if !force && @last_reset + reset_interval > Time.now
+
       try = 3
+      pool = clients.values.select(&:healthy?)
       begin
         try -= 1
-        client = random
+        i = rand(pool.length)
+        client = pool[i]
         slots_and_clients(client)
       rescue StandardError => e
-        clients.delete(client.url)
+        pool.delete_at(i)
         try.positive? ? retry : (raise e)
       end
+      @last_reset = Time.now
     end
 
     def [](url)
@@ -86,7 +103,7 @@ class RedisCluster
       unhealthy_count = 0
 
       (skip...pool.length).each do |i|
-        if pool[i].healthy
+        if pool[i].healthy?
           @buffer[i - skip] = pool[i]
         else
           unhealthy_count += 1
@@ -118,7 +135,6 @@ class RedisCluster
         arr[2..-1].each_with_index do |a, i|
           cli = self["#{a[0]}:#{a[1]}"]
           replicas[arr[0]] << cli
-          cli.call([:readonly]) if i.nonzero?
         end
 
         (arr[0]..arr[1]).each do |slot|
@@ -131,21 +147,12 @@ class RedisCluster
     end
 
     def init_client(seeds)
-      try = seeds.count
-      err = nil
-
-      while try.positive?
-        try -= 1
-        begin
-          client = create_client(seeds[try])
-          slots_and_clients(client)
-          return
-        rescue StandardError => e
-          err = e
-        end
+      # register seeds into clients
+      seeds.each do |s|
+        self[s]
       end
 
-      raise err
+      reset
     end
 
     def create_client(url)

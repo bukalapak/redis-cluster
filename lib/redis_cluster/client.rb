@@ -12,15 +12,13 @@ class RedisCluster
   # useful addition
   class Client
     attr_reader :client, :queue, :url
-    attr_accessor :middlewares
+    attr_accessor :middlewares, :circuit
 
     def initialize(opts)
       @client = Redis::Client.new(opts)
       @queue = []
       @url = "#{client.host}:#{client.port}"
-
-      @healthy = true
-      @ban_from = nil
+      @ready = false
     end
 
     def inspect
@@ -52,21 +50,23 @@ class RedisCluster
       end
     end
 
-    def healthy
-      return true if @healthy
+    # Healthy? will retrun true if circuit breaker is not open and Redis Client is ready.
+    # Redis Client will be ready if it already sent with `readonly` command.
+    #
+    # return [Boolean] Whether client is healthy or not.
+    def healthy?
+      return false if @circuit.open?
+      prepare if !@ready
 
-      # ban for 60 seconds for unhealthy state
-      if Time.now - @ban_from > 60
-        @healthy = true
-        @ban_from = nil
-      end
-
-      @healthy
+      return true
+    rescue
+      return false
     end
 
     private
 
     def _commit
+      raise CircuitOpenError, "Circuit open in client #{url} until #{@circuit.ban_until}" if @circuit.open?
       return nil if queue.empty?
 
       result = Array.new(queue.size)
@@ -74,19 +74,26 @@ class RedisCluster
         queue.size.times do |i|
           result[i] = client.read
 
-          unhealthy! if result[i].is_a?(Redis::CommandError) && result[i].message['LOADING']
+          if result[i].is_a?(Redis::CommandError) && result[i].message['LOADING']
+            @circuit.open!
+            raise LoadingStateError, "Client #{url} is in Loading State"
+          end
         end
       end
 
-      result
+      return result
+    rescue => e
+      @circuit.failed
+      @ready = false if @circuit.open?
+
+      return [e]
     ensure
       @queue = []
     end
 
-    def unhealthy!
-      @healthy = false
-      @ban_from = Time.now
-      raise LoadingStateError
+    def prepare
+      call([:readonly])
+      @ready = true
     end
   end
 end
