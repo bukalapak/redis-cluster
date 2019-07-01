@@ -9,7 +9,7 @@ class RedisCluster
 
     DEFAULT_CONFIG = {
       threshold: 5,
-      interval: 60,
+      interval: 60
     }.freeze
 
     def initialize(&block)
