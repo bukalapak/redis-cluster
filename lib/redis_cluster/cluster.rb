@@ -76,9 +76,12 @@ class RedisCluster
       return if !force && @last_reset + reset_interval > Time.now
 
       try = 3
+      # binding.pry
       pool = clients.values.select(&:healthy?)
       begin
         try -= 1
+        raise 'No healthy seed' if pool.length.zero?
+
         i = rand(pool.length)
         client = pool[i]
         slots_and_clients(client)
@@ -132,7 +135,7 @@ class RedisCluster
       end
 
       result.each do |arr|
-        arr[2..-1].each_with_index do |a, i|
+        arr[2..-1].each do |a|
           cli = self["#{a[0]}:#{a[1]}"]
           replicas[arr[0]] << cli
         end
@@ -152,16 +155,11 @@ class RedisCluster
         self[s]
       end
 
-      reset
+      reset(force: true)
     end
 
     def create_client(url)
-      if client_creater
-        client_creater.call(url)
-      else
-        host, port = url.split(':', 2)
-        Client.new(host: host, port: port)
-      end
+      client_creater.call(url)
     end
 
     # -----------------------------------------------------------------------------

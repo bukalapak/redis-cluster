@@ -6,7 +6,11 @@ require_relative 'version'
 
 class RedisCluster
 
+  # LoadingStateError is an error when try to read redis that in loading state.
   class LoadingStateError < StandardError; end
+
+  # CircuitOpenError is an error that fired when circuit in client is trip.
+  class CircuitOpenError < StandardError; end
 
   # Client is a decorator object for Redis::Client. It add queue to support pipelining and another
   # useful addition
@@ -56,11 +60,11 @@ class RedisCluster
     # return [Boolean] Whether client is healthy or not.
     def healthy?
       return false if @circuit.open?
-      prepare if !@ready
+      prepare unless @ready
 
-      return true
-    rescue
-      return false
+      true
+    rescue StandardError
+      false
     end
 
     private
@@ -81,12 +85,12 @@ class RedisCluster
         end
       end
 
-      return result
-    rescue => e
+      result
+    rescue LoadingStateError, CircuitOpenError, Redis::BaseConnectionError => e
       @circuit.failed
       @ready = false if @circuit.open?
 
-      return [e]
+      [e] # return this
     ensure
       @queue = []
     end

@@ -134,10 +134,10 @@ class RedisCluster
     # second attempt
     client.push([:asking]) if err == :ask
     reply = client.call(command)
-    err, _ = scan_reply(reply)
+    err, = scan_reply(reply)
     raise err if err
 
-    return transform.call(reply)
+    transform.call(reply)
   rescue LoadingStateError, CircuitOpenError, Redis::BaseConnectionError => e
     cluster.reset
     raise e
@@ -195,7 +195,7 @@ class RedisCluster
     end
 
     [leftover, error]
-  rescue LoadingStateError, CircuitOpenError, Redis::BaseConnectionError => e
+  rescue LoadingStateError, CircuitOpenError, Redis::BaseConnectionError
     # reset url and asking when connection refused
     futures.each{ |f| f.url = nil; f.asking = false }
 
@@ -217,7 +217,7 @@ class RedisCluster
     host, port = url.split(':', 2)
     Client.new(redis_opts.merge(host: host, port: port)).tap do |c|
       c.middlewares = middlewares
-      c.circuit = Circuit.new(cluster_opts[:circuit_threshold], cluster_opts[:circuit_interval])
+      c.circuit = Circuit.new(cluster_opts[:circuit_threshold].to_f, cluster_opts[:circuit_interval].to_f)
     end
   end
 end

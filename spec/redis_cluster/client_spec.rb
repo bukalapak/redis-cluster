@@ -2,7 +2,19 @@
 require 'redis_cluster/client'
 
 describe RedisCluster::Client do
-  subject{ described_class.new(host: '127.0.0.1', port: 7001) }
+  subject do
+    described_class.new(host: '127.0.0.1', port: 7001).tap do |client|
+      client.circuit = circuit
+    end
+  end
+
+  let(:circuit) do
+    Object.new.tap do |circuit|
+      allow(circuit).to receive(:open?)
+      allow(circuit).to receive(:open!)
+      allow(circuit).to receive(:failed)
+    end
+  end
 
   it 'works' do
     expect(subject.call([:info])).to be_a(String)
