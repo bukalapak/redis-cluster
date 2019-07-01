@@ -28,7 +28,7 @@ class RedisCluster
 
     # Open! is a method to update ban time.
     #
-    # @return[void] 
+    # @return[void]
     def open!
       @ban_until = (Time.now + @interval_time).utc
     end
