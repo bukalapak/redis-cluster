@@ -20,7 +20,7 @@ class RedisCluster
     #
     # @return[void]
     def failed
-      @fail_count = 0 if (@last_fail_time + @interval_time).utc < Time.now
+      @fail_count = 0 if @last_fail_time + (@interval_time*1.5) < Time.now
       @fail_count += 1
       @last_fail_time = Time.now
       open! if @fail_count >= @fail_threshold
@@ -30,7 +30,7 @@ class RedisCluster
     #
     # @return[void]
     def open!
-      @ban_until = (Time.now + @interval_time).utc
+      @ban_until = Time.now + @interval_time
     end
 
     # Open? is a method to check if the circuit breaker status.
