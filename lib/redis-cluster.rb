@@ -139,7 +139,6 @@ class RedisCluster
 
     transform.call(reply)
   rescue LoadingStateError, CircuitOpenError, Redis::BaseConnectionError => e
-    puts "----------------  reset called -----------------"
     cluster.reset
     raise e
   end
