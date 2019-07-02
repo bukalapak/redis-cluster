@@ -26,7 +26,7 @@ class RedisCluster
     end
 
     def inspect
-      "#<RedisCluster client v#{RedisCluster::VERSION} for #{url} (#{role} at #{refresh})>"
+      "#<RedisCluster client v#{RedisCluster::VERSION} for #{url} (#{role} at #{refresh}) status #{healthy? ? 'healthy' : 'unhealthy'}>"
     end
 
     def connected?
