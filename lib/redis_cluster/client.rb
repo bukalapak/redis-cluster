@@ -16,7 +16,7 @@ class RedisCluster
   # useful addition
   class Client
     attr_reader :client, :queue, :url
-    attr_accessor :middlewares, :circuit
+    attr_accessor :middlewares, :circuit, :role, :refresh
 
     def initialize(opts)
       @client = Redis::Client.new(opts)
@@ -26,7 +26,7 @@ class RedisCluster
     end
 
     def inspect
-      "#<RedisCluster client v#{RedisCluster::VERSION} for #{url}>"
+      "#<RedisCluster client v#{RedisCluster::VERSION} for #{url} (#{role} at #{refresh})>"
     end
 
     def connected?

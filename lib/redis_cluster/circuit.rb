@@ -20,7 +20,7 @@ class RedisCluster
     #
     # @return[void]
     def failed
-      @fail_count = 0 if @last_fail_time + (@interval_time*1.5) < Time.now
+      @fail_count = 0 if @last_fail_time + (@interval_time * 1.5) < Time.now
       @fail_count += 1
       @last_fail_time = Time.now
       open! if @fail_count >= @fail_threshold

@@ -49,6 +49,23 @@ describe RedisCluster::Cluster do
         expect{ subject.reset }.to raise_error(StandardError)
         expect(subject.clients.count).to eql (old_count)
       end
+
+      it 'set appropriate client role' do
+        start = Time.now
+        subject.reset
+        expect(subject['127.0.0.1:7001'].role).to eq :master
+        expect(subject['127.0.0.1:7002'].role).to eq :master
+        expect(subject['127.0.0.1:7003'].role).to eq :master
+        expect(subject['127.0.0.1:7004'].role).to eq :slave
+        expect(subject['127.0.0.1:7005'].role).to eq :slave
+        expect(subject['127.0.0.1:7006'].role).to eq :slave
+        expect(subject['127.0.0.1:7001'].refresh).to be >= start
+        expect(subject['127.0.0.1:7002'].refresh).to be >= start
+        expect(subject['127.0.0.1:7003'].refresh).to be >= start
+        expect(subject['127.0.0.1:7004'].refresh).to be >= start
+        expect(subject['127.0.0.1:7005'].refresh).to be >= start
+        expect(subject['127.0.0.1:7006'].refresh).to be >= start
+      end
     end
 
     describe '#[]' do

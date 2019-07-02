@@ -135,9 +135,12 @@ class RedisCluster
       end
 
       result.each do |arr|
-        arr[2..-1].each do |a|
+        arr[2..-1].each_with_index do |a, i|
           cli = self["#{a[0]}:#{a[1]}"]
           replicas[arr[0]] << cli
+
+          cli.role = i.zero? ? :master : :slave
+          cli.refresh = Time.now
         end
 
         (arr[0]..arr[1]).each do |slot|
