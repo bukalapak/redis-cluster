@@ -208,7 +208,7 @@ class RedisCluster
       raise reply if err != 'MOVED' && err != 'ASK'
 
       [err.downcase.to_sym, url]
-    elsif reply.is_a?(::RuntimeError)
+    elsif reply.is_a?(::Exception)
       raise reply
     end
   end
