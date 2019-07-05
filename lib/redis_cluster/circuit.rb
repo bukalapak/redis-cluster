@@ -13,6 +13,7 @@ class RedisCluster
       @last_fail_time = Time.now
       @fail_threshold = threshold
       @interval_time = interval
+      @callers = []
     end
 
     # Failed is a method to add failed count and compare it to threshold,
@@ -20,9 +21,13 @@ class RedisCluster
     #
     # @return[void]
     def failed
-      @fail_count = 0 if @last_fail_time + (@interval_time * 1.5) < Time.now
+      if @last_fail_time + (@interval_time * 1.5) < Time.now
+        @fail_count = 0
+        @callers = []
+      end
       @fail_count += 1
       @last_fail_time = Time.now
+      @callers << caller
       open! if @fail_count >= @fail_threshold
     end
 

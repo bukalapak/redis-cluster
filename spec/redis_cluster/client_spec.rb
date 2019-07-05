@@ -3,7 +3,7 @@ require 'redis_cluster/client'
 
 describe RedisCluster::Client do
   subject do
-    described_class.new(host: '127.0.0.1', port: 7001).tap do |client|
+    described_class.new(host: '127.0.0.1', port: port).tap do |client|
       client.circuit = circuit
       client.role = :master
       client.refresh = refresh
@@ -20,12 +20,39 @@ describe RedisCluster::Client do
     end
   end
 
-  it 'works' do
-    expect(subject.call([:info])).to be_a(String)
+  let(:port){ 7001 }
 
-    subject.push([:info])
-    subject.push([:info])
-    expect(subject.commit).to be_a(Array)
+  context 'clustered redis' do
+    describe '#commit' do
+      it 'works' do
+        expect(subject.call([:info])).to be_a(String)
+
+        subject.push([:info])
+        subject.push([:info])
+        expect(subject.commit).to be_a(Array)
+      end
+    end
+
+    describe '#healthy?' do
+      it{ expect(subject.healthy?).to be_truthy }
+    end
+  end
+
+  context 'standalone redis' do
+    let(:port){ 7007 }
+    describe '#commit' do
+      it 'works' do
+        expect(subject.call([:info])).to be_a(String)
+
+        subject.push([:info])
+        subject.push([:info])
+        expect(subject.commit).to be_a(Array)
+      end
+    end
+
+    describe '#healthy?' do
+      it{ expect(subject.healthy?).to be_truthy }
+    end
   end
 
   describe '#inspect' do
