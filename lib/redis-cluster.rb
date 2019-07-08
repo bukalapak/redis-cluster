@@ -63,6 +63,13 @@ class RedisCluster
 
   NOOP = ->(v){ v }
 
+  def safely
+    synchronize{ yield } if block_given?
+  rescue StandardError => e
+    logger&.error(e)
+    raise e unless silent?
+  end
+
   def _call(keys, command, opts = {})
     opts[:transform] ||= NOOP
     slot = cluster.slot_for(keys)
@@ -73,6 +80,37 @@ class RedisCluster
       else
         call_immediately(slot, command, opts)
       end
+    end
+  end
+
+  def call_immediately(slot, command, transform:, read: false)
+    mode = read ? :read : :write
+    client = cluster.client_for(mode, slot)
+
+    # first attempt
+    reply = client.call(command)
+    err, url = scan_reply(reply)
+    return transform.call(reply) unless err
+
+    # make adjustment for cluster change
+    cluster.reset(force: true) if err == :moved
+    client = cluster[url]
+
+    # second attempt
+    client.push([:asking]) if err == :ask
+    reply = client.call(command)
+    err, = scan_reply(reply)
+    raise err if err
+
+    transform.call(reply)
+  rescue LoadingStateError, CircuitOpenError, Redis::BaseConnectionError => e
+    cluster.reset
+    raise e
+  end
+
+  def call_pipeline(slot, command, opts)
+    Future.new(slot, command, opts[:transform]).tap do |future|
+      @pipeline << future
     end
   end
 
@@ -108,44 +146,6 @@ class RedisCluster
       ensure
         @pipeline = nil
       end
-    end
-  end
-
-  def safely
-    synchronize{ yield } if block_given?
-  rescue StandardError => e
-    logger&.error(e)
-    raise e unless silent?
-  end
-
-  def call_immediately(slot, command, transform:, read: false)
-    mode = read ? :read : :write
-    client = cluster.client_for(mode, slot)
-
-    # first attempt
-    reply = client.call(command)
-    err, url = scan_reply(reply)
-    return transform.call(reply) unless err
-
-    # make adjustment for cluster change
-    cluster.reset(force: true) if err == :moved
-    client = cluster[url]
-
-    # second attempt
-    client.push([:asking]) if err == :ask
-    reply = client.call(command)
-    err, = scan_reply(reply)
-    raise err if err
-
-    transform.call(reply)
-  rescue LoadingStateError, CircuitOpenError, Redis::BaseConnectionError => e
-    cluster.reset
-    raise e
-  end
-
-  def call_pipeline(slot, command, opts)
-    Future.new(slot, command, opts[:transform]).tap do |future|
-      @pipeline << future
     end
   end
 
