@@ -18,7 +18,7 @@ class RedisCluster
     end
 
     def value
-      raise @value if @value.is_a?(::RuntimeError)
+      raise @value if @value.is_a?(::StandardError)
       @value
     end
 

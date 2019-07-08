@@ -60,11 +60,20 @@ class RedisCluster
     # return [Boolean] Whether client is healthy or not.
     def healthy?
       return false if @circuit.open?
-      prepare unless @ready
+
+      unless @ready
+        res = call([:readonly])
+        raise res if res.is_a?(StandardError)
+        @ready = true
+      end
 
       true
-    rescue StandardError
+
+    rescue LoadingStateError, CircuitOpenError, Redis::BaseConnectionError
       false
+    rescue Redis::CommandError => e
+      return true if e.message.eql?('ERR This instance has cluster support disabled')
+      raise e
     end
 
     private
@@ -93,11 +102,6 @@ class RedisCluster
       [e] # return this
     ensure
       @queue = []
-    end
-
-    def prepare
-      call([:readonly])
-      @ready = true
     end
   end
 end
