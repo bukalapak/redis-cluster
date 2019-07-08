@@ -5,7 +5,7 @@ class RedisCluster
   # Circuit is circuit breaker for RedisCluster.
   class Circuit
 
-    attr_reader :fail_count, :ban_until
+    attr_reader :fail_count, :ban_until, :callers
 
     def initialize(threshold, interval)
       @ban_until = Time.now
