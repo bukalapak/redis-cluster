@@ -103,21 +103,16 @@ class RedisCluster
     private
 
     def pick_client(pool, skip: 0)
-      unhealthy_count = 0
+      begin
+        i = rand(skip...pool.length)
 
-      (skip...pool.length).each do |i|
-        if pool[i].healthy?
-          @buffer[i - skip] = pool[i]
-        else
-          unhealthy_count += 1
-        end
+        buffer = pool.delete(pool[i])
+
+        return buffer if buffer.healthy?
+
+        return nil if pool.length.zero?
+        retry
       end
-
-      buffer_length = pool.length - skip - unhealthy_count
-      return nil if buffer_length.zero?
-
-      i = rand(buffer_length)
-      @buffer[i]
     end
 
     def slots_and_clients(client)
