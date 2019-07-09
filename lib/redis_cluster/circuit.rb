@@ -32,10 +32,13 @@ class RedisCluster
     end
 
     # Open! is a method to update ban time.
+    # will trigger middleware[:circuit] if exist
     #
     # @return[void]
     def open!
-      @ban_until = Time.now + @interval_time
+      middlewares.invoke(:circuit, self, *args) do
+        @ban_until = Time.now + @interval_time
+      end
     end
 
     # Open? is a method to check if the circuit breaker status.
