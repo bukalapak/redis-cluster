@@ -84,28 +84,34 @@ class RedisCluster
   end
 
   def call_immediately(slot, command, transform:, read: false)
-    mode = read ? :read : :write
-    client = cluster.client_for(mode, slot)
+    begin
+      retries ||= 0
+      mode = read ? :read : :write
+      client = cluster.client_for(mode, slot)
 
-    # first attempt
-    reply = client.call(command)
-    err, url = scan_reply(reply)
-    return transform.call(reply) unless err
+      # first attempt
+      reply = client.call(command)
+      err, url = scan_reply(reply)
+      return transform.call(reply) unless err
 
-    # make adjustment for cluster change
-    cluster.reset(force: true) if err == :moved
-    client = cluster[url]
+      # make adjustment for cluster change
+      cluster.reset(force: true) if err == :moved
+      client = cluster[url]
 
-    # second attempt
-    client.push([:asking]) if err == :ask
-    reply = client.call(command)
-    err, = scan_reply(reply)
-    raise err if err
+      # second attempt
+      client.push([:asking]) if err == :ask
+      reply = client.call(command)
+      err, = scan_reply(reply)
+      raise err if err
 
-    transform.call(reply)
-  rescue LoadingStateError, CircuitOpenError, Redis::BaseConnectionError => e
-    cluster.reset
-    raise e
+      transform.call(reply)
+    rescue Redis::BaseConnectionError => e
+      retry if (retries += 1) < 3
+      raise e
+    rescue LoadingStateError, CircuitOpenError => e
+      cluster.reset
+      raise e
+    end
   end
 
   def call_pipeline(slot, command, opts)
