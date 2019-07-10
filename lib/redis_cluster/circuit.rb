@@ -5,14 +5,15 @@ class RedisCluster
   # Circuit is circuit breaker for RedisCluster.
   class Circuit
 
-    attr_reader :fail_count, :ban_until, :callers
+    attr_reader :fail_count, :ban_until, :callers, :middlewares
 
-    def initialize(threshold, interval)
+    def initialize(threshold, interval, middlewares)
       @ban_until = Time.now
       @fail_count = 0
       @last_fail_time = Time.now
       @fail_threshold = threshold
       @interval_time = interval
+      @middlewares = middlewares
       @callers = []
     end
 
@@ -36,10 +37,19 @@ class RedisCluster
     #
     # @return[void]
     def open!
-      middlewares.invoke(:circuit, self, *args) do
+      unless middlewares
+        @ban_until = Time.now + @interval_time
+        return
+      end
+
+      middlewares.invoke(:circuit, self) do
         @ban_until = Time.now + @interval_time
       end
     end
+
+    # def open!
+    #   @ban_until = Time.now + @interval_time
+    # end
 
     # Open? is a method to check if the circuit breaker status.
     #

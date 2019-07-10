@@ -83,9 +83,34 @@ class RedisCluster
     end
   end
 
+  # def call_immediately(slot, command, transform:, read: false)
+  #   mode = read ? :read : :write
+  #   client = cluster.client_for(mode, slot)
+
+  #   # first attempt
+  #   reply = client.call(command)
+  #   err, url = scan_reply(reply)
+  #   return transform.call(reply) unless err
+
+  #   # make adjustment for cluster change
+  #   cluster.reset(force: true) if err == :moved
+  #   client = cluster[url]
+
+  #   # second attempt
+  #   client.push([:asking]) if err == :ask
+  #   reply = client.call(command)
+  #   err, = scan_reply(reply)
+  #   raise err if err
+
+  #   transform.call(reply)
+  # rescue LoadingStateError, CircuitOpenError, Redis::BaseConnectionError => e
+  #   cluster.reset
+  #   raise e
+  # end
+
   def call_immediately(slot, command, transform:, read: false)
+    retries = 0
     begin
-      retries ||= 0
       mode = read ? :read : :write
       client = cluster.client_for(mode, slot)
 
@@ -106,6 +131,7 @@ class RedisCluster
 
       transform.call(reply)
     rescue Redis::BaseConnectionError => e
+      cluster.reset
       retry if (retries += 1) < 3
       raise e
     rescue LoadingStateError, CircuitOpenError => e
@@ -223,7 +249,7 @@ class RedisCluster
     host, port = url.split(':', 2)
     Client.new(redis_opts.merge(host: host, port: port)).tap do |c|
       c.middlewares = middlewares
-      c.circuit = Circuit.new(cluster_opts[:circuit_threshold].to_f, cluster_opts[:circuit_interval].to_f)
+      c.circuit = Circuit.new(cluster_opts[:circuit_threshold].to_f, cluster_opts[:circuit_interval].to_f, middlewares)
     end
   end
 end

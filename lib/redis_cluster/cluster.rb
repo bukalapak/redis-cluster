@@ -103,15 +103,18 @@ class RedisCluster
     private
 
     def pick_client(pool, skip: 0)
-      begin
-        i = rand(skip...pool.length)
+      pool_copy = pool.clone
 
-        buffer = pool.delete(pool[i])
+      until pool_copy.length.zero?
+        i = rand(skip...pool_copy.length)
 
-        return buffer if buffer.healthy?
+        return nil if i.nil?
 
-        return nil if pool.length.zero?
-        retry
+        temp = pool_copy.delete(pool_copy[i])
+
+        return temp if temp.healthy?
+
+        return nil if pool_copy.length.zero?
       end
     end
 

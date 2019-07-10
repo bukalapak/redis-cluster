@@ -68,7 +68,6 @@ class RedisCluster
       end
 
       true
-
     rescue LoadingStateError, CircuitOpenError, Redis::BaseConnectionError
       false
     rescue Redis::CommandError => e
