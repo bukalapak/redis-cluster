@@ -37,6 +37,8 @@ class RedisCluster
     #
     # @return[void]
     def open!
+      @callers << caller
+
       unless middlewares
         @ban_until = Time.now + @interval_time
         return
