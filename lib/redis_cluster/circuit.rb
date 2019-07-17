@@ -21,23 +21,23 @@ class RedisCluster
     # Will trip circuit if the count goes through threshold.
     #
     # @return[void]
-    def failed
+    def failed(err)
       if @last_fail_time + (@interval_time * 1.5) < Time.now
         @fail_count = 0
         @callers = []
       end
       @fail_count += 1
       @last_fail_time = Time.now
-      @callers << caller
-      open! if @fail_count >= @fail_threshold
+      @callers << err
+      open!(e) if @fail_count >= @fail_threshold
     end
 
     # Open! is a method to update ban time.
     # will trigger middleware[:circuit] if exist
     #
     # @return[void]
-    def open!
-      @callers << caller
+    def open!(err)
+      @callers << err
 
       unless middlewares
         @ban_until = Time.now + @interval_time
