@@ -89,7 +89,7 @@ class RedisCluster
           if result[i].is_a?(Redis::CommandError) && result[i].message['LOADING']
             err = LoadingStateError.new("Client #{url} is in Loading State")
             @circuit.open!(err)
-            raise e
+            raise err
           end
         end
       end

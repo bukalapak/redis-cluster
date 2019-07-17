@@ -29,7 +29,7 @@ class RedisCluster
       @fail_count += 1
       @last_fail_time = Time.now
       @callers << err
-      open!(e) if @fail_count >= @fail_threshold
+      open!(err) if @fail_count >= @fail_threshold
     end
 
     # Open! is a method to update ban time.
