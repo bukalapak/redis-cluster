@@ -22,7 +22,7 @@ describe RedisCluster::Circuit do
 
   describe '#open!' do
   	it 'can increase ban time' do
-  	  subject.open!(nil)
+  	  subject.open!("test open")
   	  expect(subject.ban_until).to be > Time.now
   	end
   end
@@ -32,7 +32,7 @@ describe RedisCluster::Circuit do
   		expect(subject.open?).to eq false
   	end
   	it 'can check if its banned' do
-  		subject.open!(nil)
+  		subject.open!("test open")
   		expect(subject.open?).to eq true
   	end
   end
