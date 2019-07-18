@@ -80,10 +80,11 @@ class RedisCluster
     def _commit
       return nil if queue.empty?
       if @circuit.open?
-        raise CircuitOpenError, "Circuit open in client #{url} until #{@circuit.ban_until} '\
-              'fail_count: #{@circuit.fail_count} '\
-              'trigger: #{@circuit.trigger} '\
-              'cause: #{@circuit.causes.map{ |e| e.class.name }.join("\n")}"
+        raise CircuitOpenError, "Circuit open in client #{url} until #{@circuit.ban_until} "\
+              "fail_count: #{@circuit.fail_count} "\
+              "trigger: #{@circuit.trigger} "\
+              "current time: #{Time.now} "\
+              "cause: #{@circuit.causes.map{ |e| e.class.name }.join("\n")}"
       end
 
       result = Array.new(queue.size)
