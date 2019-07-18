@@ -78,7 +78,7 @@ class RedisCluster
     private
 
     def _commit
-      raise CircuitOpenError, "Circuit open in client #{url} until #{@circuit.ban_until} callers: #{@circuit.callers.map{ |e| e.message }.join("\n")}" if @circuit.open?
+      raise CircuitOpenError, "Circuit open in client #{url} until #{@circuit.ban_until} callers: #{@circuit.callers.map{ |e| e.class.name }.join("\n")}" if @circuit.open?
       return nil if queue.empty?
 
       result = Array.new(queue.size)
