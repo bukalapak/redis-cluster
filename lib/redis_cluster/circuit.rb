@@ -5,7 +5,7 @@ class RedisCluster
   # Circuit is circuit breaker for RedisCluster.
   class Circuit
 
-    attr_reader :fail_count, :ban_until, :callers, :middlewares
+    attr_reader :fail_count, :ban_until, :causes, :trigger, :middlewares
 
     def initialize(threshold, interval, middlewares)
       @ban_until = Time.now
@@ -14,7 +14,9 @@ class RedisCluster
       @fail_threshold = threshold
       @interval_time = interval
       @middlewares = middlewares
-      @callers = []
+
+      @causes = []
+      @trigger = nil
     end
 
     # Failed is a method to add failed count and compare it to threshold,
@@ -24,20 +26,20 @@ class RedisCluster
     def failed(err)
       if @last_fail_time + (@interval_time * 1.5) < Time.now
         @fail_count = 0
-        @callers = []
+        @causes = []
       end
       @fail_count += 1
       @last_fail_time = Time.now
-      @callers << err
-      open!(err) if @fail_count >= @fail_threshold
+      @causes << err
+      open!('failure') if @fail_count >= @fail_threshold
     end
 
     # Open! is a method to update ban time.
     # will trigger middleware[:circuit] if exist
     #
     # @return[void]
-    def open!(err)
-      @callers << err
+    def open!(trigger)
+      @trigger = trigger
 
       unless middlewares
         @ban_until = Time.now + @interval_time

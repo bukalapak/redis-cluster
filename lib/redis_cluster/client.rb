@@ -78,7 +78,8 @@ class RedisCluster
     private
 
     def _commit
-      raise CircuitOpenError, "Circuit open in client #{url} until #{@circuit.ban_until} callers: #{@circuit.callers.map{ |e| e.class.name }.join("\n")}" if @circuit.open?
+      raise CircuitOpenError, "Circuit open in client #{url} until #{@circuit.ban_until} fail_count: #{@circuit.fail_count}'\
+            ' trigger: #{@circuit.trigger} cause: #{@circuit.causes.map{ |e| e.class.name }.join("\n")}" if @circuit.open?
       return nil if queue.empty?
 
       result = Array.new(queue.size)
@@ -87,9 +88,8 @@ class RedisCluster
           result[i] = client.read
 
           if result[i].is_a?(Redis::CommandError) && result[i].message['LOADING']
-            err = LoadingStateError.new("Client #{url} is in Loading State")
-            @circuit.open!(err)
-            raise err
+            @circuit.open!('LOADING State')
+            raise LoadingStateError, "Client #{url} is in Loading State"
           end
         end
       end
