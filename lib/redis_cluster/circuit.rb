@@ -8,7 +8,7 @@ class RedisCluster
     attr_reader :fail_count, :ban_until, :causes, :trigger, :middlewares
 
     def initialize(threshold, interval, middlewares)
-      @ban_until = Time.now
+      @ban_until = Time.at 0
       @fail_count = 0
       @last_fail_time = Time.now
       @fail_threshold = threshold
