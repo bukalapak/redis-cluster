@@ -29,7 +29,7 @@ describe RedisCluster::Cluster do
         allow(subject).to receive(:slots_and_clients).and_raise(StandardError)
 
         expect{ subject.reset }.to raise_error(StandardError)
-        expect(subject.clients.count).to eql (old_count - 3)
+        expect(subject.clients.count).to eql (old_count)
       end
     end
 
