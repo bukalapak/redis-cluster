@@ -13,7 +13,7 @@ class RedisCluster
 
     HASH_SLOTS = 16_384
     CROSSSLOT_ERROR = Redis::CommandError.new("CROSSSLOT Keys in request don't hash to the same slot")
-    NO_HEALTHY_SEED_ERROR = NoHealthySeedError.new("No healthy seed")
+    NO_HEALTHY_SEED_ERROR = NoHealthySeedError.new('No healthy seed')
 
     def initialize(seeds, cluster_opts = {}, &block)
       @options = cluster_opts
