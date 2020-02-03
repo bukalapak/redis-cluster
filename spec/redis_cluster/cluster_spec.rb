@@ -4,7 +4,7 @@ require 'pry'
 
 describe RedisCluster::Cluster do
   subject do
-    described_class.new([url], read_mode: read_mode, force_cluster: force_cluster) do |url|
+    described_class.new(seeds, read_mode: read_mode, force_cluster: force_cluster) do |url|
       host, port = url.split(':', 2)
       RedisCluster::Client.new(host: host, port: port).tap do |cl|
         cl.circuit = circuit
@@ -18,6 +18,7 @@ describe RedisCluster::Cluster do
       allow(circuit).to receive(:failed)
     end
   end
+  let(:seeds){ [url] }
   let(:url){ '127.0.0.1:7001' }
   let(:read_mode){ :master }
   let(:force_cluster){ true }
@@ -165,6 +166,14 @@ describe RedisCluster::Cluster do
       it do
         expect{ subject }.to raise_error('No healthy seed')
       end
+    end
+  end
+
+  context 'empty seeds' do
+    let(:seeds){ [] }
+
+    it do
+      expect{ subject }.to raise_error(RedisCluster::NoHealthySeedError)
     end
   end
 end

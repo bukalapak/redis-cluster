@@ -4,12 +4,16 @@ require_relative 'client'
 
 class RedisCluster
 
+  # NoHealthySeedError is an error when no more pool / healthy seeds in redis cluster.
+  class NoHealthySeedError < StandardError; end
+
   # Cluster implement redis cluster logic for client.
   class Cluster
     attr_reader :options, :slots, :clients, :replicas, :client_creater
 
     HASH_SLOTS = 16_384
     CROSSSLOT_ERROR = Redis::CommandError.new("CROSSSLOT Keys in request don't hash to the same slot")
+    NO_HEALTHY_SEED_ERROR = NoHealthySeedError.new('No healthy seed')
 
     def initialize(seeds, cluster_opts = {}, &block)
       @options = cluster_opts
@@ -80,11 +84,13 @@ class RedisCluster
       pool = clients.values.select(&:healthy?)
       begin
         try -= 1
-        raise 'No healthy seed' if pool.length.zero?
+        raise NO_HEALTHY_SEED_ERROR if pool.length.zero?
 
         i = rand(pool.length)
         client = pool[i]
         slots_and_clients(client)
+      rescue NoHealthySeedError => e
+        raise e
       rescue StandardError => e
         pool.delete_at(i)
         try.positive? ? retry : (raise e)
