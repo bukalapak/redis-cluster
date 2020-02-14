@@ -84,7 +84,7 @@ class RedisCluster
               "fail_count: #{@circuit.fail_count} "\
               "trigger: #{@circuit.trigger} "\
               "current time: #{Time.now} "\
-              "cause: #{@circuit.causes.map{ |e| e.class.name: e.message }.join("\n")}"
+              "cause: #{@circuit.causes.map{ |e| "#{e.class.name}: #{e.message}" }.join("\n")}"
       end
 
       result = Array.new(queue.size)
