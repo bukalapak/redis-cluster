@@ -1,4 +1,9 @@
-## 1.0.0 [rc] / 2018-06-07
+## 1.1.0 [rc] / 2019-07-03
+- [BUGFIX] Better failover algorithm
+- [FEATURE] Add parameter for circuit breaker. `circuit_threshold` and circuit_interval.
+- [FEATURE] Add parameter for max cluster topology refresh per interval. Cluster topology refresh can only happen once per `reset_interval`.
+
+## 1.0.0 / 2018-06-07
 - [FEATURE] Middleware support
 - [BUGFIX] Exclue slave instance in LOADING state from client candidate.
 

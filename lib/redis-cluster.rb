@@ -4,6 +4,7 @@ require 'redis'
 
 require_relative 'redis_cluster/cluster'
 require_relative 'redis_cluster/client'
+require_relative 'redis_cluster/circuit'
 require_relative 'redis_cluster/future'
 require_relative 'redis_cluster/function'
 require_relative 'redis_cluster/middlewares'
@@ -62,6 +63,13 @@ class RedisCluster
 
   NOOP = ->(v){ v }
 
+  def safely
+    synchronize{ yield } if block_given?
+  rescue StandardError => e
+    logger&.error(e)
+    raise e unless silent?
+  end
+
   def _call(keys, command, opts = {})
     opts[:transform] ||= NOOP
     slot = cluster.slot_for(keys)
@@ -72,6 +80,44 @@ class RedisCluster
       else
         call_immediately(slot, command, opts)
       end
+    end
+  end
+
+  def call_immediately(slot, command, transform:, read: false)
+    retries = 0
+    begin
+      mode = read ? :read : :write
+      client = cluster.client_for(mode, slot)
+
+      # first attempt
+      reply = client.call(command)
+      err, url = scan_reply(reply)
+      return transform.call(reply) unless err
+
+      # make adjustment for cluster change
+      cluster.reset(force: true) if err == :moved
+      client = cluster[url]
+
+      # second attempt
+      client.push([:asking]) if err == :ask
+      reply = client.call(command)
+      err, = scan_reply(reply)
+      raise err if err
+
+      transform.call(reply)
+    rescue Redis::BaseConnectionError => e
+      cluster.reset
+      retry if (retries += 1) < 3
+      raise e
+    rescue LoadingStateError, CircuitOpenError => e
+      cluster.reset
+      raise e
+    end
+  end
+
+  def call_pipeline(slot, command, opts)
+    Future.new(slot, command, opts[:transform]).tap do |future|
+      @pipeline << future
     end
   end
 
@@ -87,69 +133,26 @@ class RedisCluster
         while !@pipeline.empty? && try.positive?
           try -= 1
           moved = false
+          down = false
           mapped_future = map_pipeline(@pipeline)
 
           @pipeline = []
           mapped_future.each do |url, futures|
             leftover, error = do_pipelined(url, futures)
-            moved ||= (error == :moved || error == :down)
+            moved ||= error == :moved
+            down ||= error == :down
 
             @pipeline.concat(leftover)
           end
 
-          cluster.reset if moved
+          # force if moved, do not force if down
+          cluster.reset(force: moved) if moved || down
         end
 
         @pipeline.first.value unless @pipeline.empty?
       ensure
         @pipeline = nil
       end
-    end
-  end
-
-  def safely
-    synchronize{ yield } if block_given?
-  rescue StandardError => e
-    logger&.error(e)
-    raise e unless silent?
-  end
-
-  def call_immediately(slot, command, transform:, read: false)
-    try = 3
-    asking = false
-    reply = nil
-    mode = read ? :read : :write
-    client = cluster.client_for(mode, slot)
-
-    while try.positive?
-      begin
-        try -= 1
-
-        client.push([:asking]) if asking
-        reply = client.call(command)
-
-        err, url = scan_reply(reply)
-        return transform.call(reply) unless err
-
-        cluster.reset if err == :moved
-        asking = err == :ask
-        client = cluster[url]
-      rescue LoadingStateError, Redis::CannotConnectError => e
-        if e.is_a?(Redis::CannotConnectError)
-          asking = false
-          cluster.reset
-        end
-        client = cluster.client_for(mode, slot)
-        reply = e
-      end
-    end
-
-    raise reply
-  end
-
-  def call_pipeline(slot, command, opts)
-    Future.new(slot, command, opts[:transform]).tap do |future|
-      @pipeline << future
     end
   end
 
@@ -171,6 +174,7 @@ class RedisCluster
     idx = 0
     client = cluster[url]
 
+    # map reverse index for pipeline commands.
     futures.each_with_index do |future, i|
       if future.asking
         client.push([:asking])
@@ -198,11 +202,11 @@ class RedisCluster
     end
 
     [leftover, error]
-  rescue LoadingStateError, Redis::CannotConnectError => e
+  rescue LoadingStateError, CircuitOpenError, Redis::BaseConnectionError
     # reset url and asking when connection refused
     futures.each{ |f| f.url = nil; f.asking = false }
 
-    [futures, e.is_a?(LoadingStateError) ? :loading : :down]
+    [futures, :down]
   end
 
   def scan_reply(reply)
@@ -211,7 +215,7 @@ class RedisCluster
       raise reply if err != 'MOVED' && err != 'ASK'
 
       [err.downcase.to_sym, url]
-    elsif reply.is_a?(::RuntimeError)
+    elsif reply.is_a?(::Exception)
       raise reply
     end
   end
@@ -220,6 +224,7 @@ class RedisCluster
     host, port = url.split(':', 2)
     Client.new(redis_opts.merge(host: host, port: port)).tap do |c|
       c.middlewares = middlewares
+      c.circuit = Circuit.new(cluster_opts[:circuit_threshold].to_f, cluster_opts[:circuit_interval].to_f, middlewares)
     end
   end
 end

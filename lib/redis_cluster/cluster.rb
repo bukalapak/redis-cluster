@@ -4,12 +4,16 @@ require_relative 'client'
 
 class RedisCluster
 
+  # NoHealthySeedError is an error when no more pool / healthy seeds in redis cluster.
+  class NoHealthySeedError < StandardError; end
+
   # Cluster implement redis cluster logic for client.
   class Cluster
     attr_reader :options, :slots, :clients, :replicas, :client_creater
 
     HASH_SLOTS = 16_384
     CROSSSLOT_ERROR = Redis::CommandError.new("CROSSSLOT Keys in request don't hash to the same slot")
+    NO_HEALTHY_SEED_ERROR = NoHealthySeedError.new('No healthy seed')
 
     def initialize(seeds, cluster_opts = {}, &block)
       @options = cluster_opts
@@ -17,6 +21,7 @@ class RedisCluster
       @clients = {}
       @replicas = nil
       @client_creater = block
+      @last_reset = Time.now - reset_interval
 
       @buffer = []
       init_client(seeds)
@@ -28,6 +33,13 @@ class RedisCluster
 
     def read_mode
       options[:read_mode] || :master
+    end
+
+    # Reset_interval return interval in second which reset can happen. A reset can only happen once per reset_interval.
+    #
+    # @return [Fixnum] reset interval
+    def reset_interval
+      options[:reset_interval].to_f
     end
 
     def slot_for(keys)
@@ -60,16 +72,30 @@ class RedisCluster
       clients.values.sample
     end
 
-    def reset
+    # Reset will reload cluster topology. Reset will only be executed once per reset_interval if not forced.
+    #
+    # @param [Boolean] force: Whether to force reset to happen or not.
+    # @return [void]
+    def reset(force: false)
+      return if !force && @last_reset + reset_interval > Time.now
+
       try = 3
+      # binding.pry
+      pool = clients.values.select(&:healthy?)
       begin
         try -= 1
-        client = random
+        raise NO_HEALTHY_SEED_ERROR if pool.length.zero?
+
+        i = rand(pool.length)
+        client = pool[i]
         slots_and_clients(client)
+      rescue NoHealthySeedError => e
+        raise e
       rescue StandardError => e
-        clients.delete(client.url)
+        pool.delete_at(i)
         try.positive? ? retry : (raise e)
       end
+      @last_reset = Time.now
     end
 
     def [](url)
@@ -83,21 +109,19 @@ class RedisCluster
     private
 
     def pick_client(pool, skip: 0)
-      unhealthy_count = 0
+      pool_copy = pool.clone
 
-      (skip...pool.length).each do |i|
-        if pool[i].healthy
-          @buffer[i - skip] = pool[i]
-        else
-          unhealthy_count += 1
-        end
+      until pool_copy.length.zero?
+        i = rand(skip...pool_copy.length)
+
+        return nil if i.nil?
+
+        temp = pool_copy.delete(pool_copy[i])
+
+        return temp if temp.healthy?
+
+        return nil if pool_copy.length.zero?
       end
-
-      buffer_length = pool.length - skip - unhealthy_count
-      return nil if buffer_length.zero?
-
-      i = rand(buffer_length)
-      @buffer[i]
     end
 
     def slots_and_clients(client)
@@ -118,7 +142,9 @@ class RedisCluster
         arr[2..-1].each_with_index do |a, i|
           cli = self["#{a[0]}:#{a[1]}"]
           replicas[arr[0]] << cli
-          cli.call([:readonly]) if i.nonzero?
+
+          cli.role = i.zero? ? :master : :slave
+          cli.refresh = Time.now
         end
 
         (arr[0]..arr[1]).each do |slot|
@@ -131,30 +157,16 @@ class RedisCluster
     end
 
     def init_client(seeds)
-      try = seeds.count
-      err = nil
-
-      while try.positive?
-        try -= 1
-        begin
-          client = create_client(seeds[try])
-          slots_and_clients(client)
-          return
-        rescue StandardError => e
-          err = e
-        end
+      # register seeds into clients
+      seeds.each do |s|
+        self[s]
       end
 
-      raise err
+      reset(force: true)
     end
 
     def create_client(url)
-      if client_creater
-        client_creater.call(url)
-      else
-        host, port = url.split(':', 2)
-        Client.new(host: host, port: port)
-      end
+      client_creater.call(url)
     end
 
     # -----------------------------------------------------------------------------

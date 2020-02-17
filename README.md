@@ -94,6 +94,9 @@ Option for RedisCluster.
 - `read_mode`: for read command, RedisClient can try to read from slave if specified. Supported option is `:master`(default), `:slave`, and `:master_slave`.
 - `silent`: whether or not RedisCluster will raise error.
 - `logger`: if specified. RedisCluster will log all of RedisCluster errors here.
+- `reset_interval`: reset threshold in second. A reset can only happen once per reset_interval.
+- `circuit_threshold`: Threshold how many error that client will considered an unhealthy.
+- `circuit_interval`: How long failed count will be remembered in second.
 
 #### Middlewares
 
