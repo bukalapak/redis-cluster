@@ -1,3 +1,6 @@
+## 1.1.1 / 2020-02-18
+- [BUGFIX] Fix stuck at CircuitOpenError when circuit got tripped.
+
 ## 1.1.0 [rc] / 2019-07-03
 - [BUGFIX] Better failover algorithm
 - [FEATURE] Add parameter for circuit breaker. `circuit_threshold` and circuit_interval.

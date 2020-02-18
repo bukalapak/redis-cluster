@@ -84,7 +84,7 @@ class RedisCluster
               "fail_count: #{@circuit.fail_count} "\
               "trigger: #{@circuit.trigger} "\
               "current time: #{Time.now} "\
-              "cause: #{@circuit.causes.map{ |e| e.class.name }.join("\n")}"
+              "cause: #{@circuit.causes.map{ |e| "#{e.class.name}: #{e.message}" }.join("\n")}"
       end
 
       result = Array.new(queue.size)
@@ -100,7 +100,7 @@ class RedisCluster
       end
 
       result
-    rescue LoadingStateError, CircuitOpenError, Redis::BaseConnectionError => e
+    rescue LoadingStateError, Redis::BaseConnectionError => e
       @circuit.failed(e)
       @ready = false if @circuit.open?
 
