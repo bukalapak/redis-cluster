@@ -100,6 +100,8 @@ class RedisCluster
       end
 
       result
+    rescue CircuitOpenError => e
+      raise e
     rescue LoadingStateError, Redis::BaseConnectionError => e
       @circuit.failed(e)
       @ready = false if @circuit.open?
