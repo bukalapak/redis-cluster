@@ -105,12 +105,12 @@ class RedisCluster
       raise err if err
 
       transform.call(reply)
-    rescue LoadingStateError, CircuitOpenError => e
-      cluster.reset
-      raise e
     rescue Redis::BaseConnectionError => e
       cluster.reset
       retry if (retries += 1) < 3
+      raise e
+    rescue LoadingStateError, CircuitOpenError => e
+      cluster.reset
       raise e
     end
   end

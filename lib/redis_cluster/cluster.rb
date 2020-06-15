@@ -5,7 +5,7 @@ require_relative 'client'
 class RedisCluster
 
   # NoHealthySeedError is an error when no more pool / healthy seeds in redis cluster.
-  class NoHealthySeedError < Redis::BaseConnectionError; end
+  class NoHealthySeedError < StandardError; end
 
   # Cluster implement redis cluster logic for client.
   class Cluster
