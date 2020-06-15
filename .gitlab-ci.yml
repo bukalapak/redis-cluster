@@ -1,7 +1,7 @@
 image: ruby:2.3
 
 stages:
-  test
+- test
 
 test:
   stage: test
