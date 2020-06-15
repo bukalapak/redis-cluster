@@ -1,15 +1,15 @@
 image: ruby:2.3
 
-stages:
-- test
-
 test:
-  stage: test
   before_script:
-  - bundle install --deployment
-  - .circleci/install.sh
-  - mkdir .circleci/tmp
-  - bundle exec rake start
+    - bundle install --deployment
+    - .circleci/install.sh
+    - mkdir .circleci/tmp
+    - bundle exec rake start
   script:
-  - bundle exec rake test
-  - bundle exec rake lint
+    - bundle exec rake test
+    - bundle exec rake lint
+  cache:
+    key: "gemz"
+    paths:
+    - ./vendor
