@@ -5,5 +5,11 @@ stages:
 
 test:
   stage: test
-  script:
+  before_script:
   - bundle install --deployment
+  - .circleci/install.sh
+  - mkdir .circleci/tmp
+  - bundle exec rake start
+  script:
+  - bundle exec rake test
+  - bundle exec rake lint
