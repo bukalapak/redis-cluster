@@ -1,3 +1,6 @@
+## 1.2.0 / 2020-06-15
+- [FEATURE] Using `Redis::BaseConnectionError` as `RedisCluter` error base class.
+
 ## 1.1.1 / 2020-02-18
 - [BUGFIX] Fix stuck at CircuitOpenError when circuit got tripped.
 
