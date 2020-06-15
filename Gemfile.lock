@@ -27,7 +27,7 @@ GEM
       method_source (~> 0.8.1)
       slop (~> 3.4)
     rainbow (3.0.0)
-    rake (11.2.2)
+    rake (13.0.1)
     redis (3.3.5)
     rspec (3.5.0)
       rspec-core (~> 3.5.0)
