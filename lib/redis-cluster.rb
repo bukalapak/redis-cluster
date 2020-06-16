@@ -5,9 +5,11 @@ require 'redis'
 require_relative 'redis_cluster/cluster'
 require_relative 'redis_cluster/client'
 require_relative 'redis_cluster/circuit'
+require_relative 'redis_cluster/error'
 require_relative 'redis_cluster/future'
 require_relative 'redis_cluster/function'
 require_relative 'redis_cluster/middlewares'
+
 
 # RedisCluster is a client for redis-cluster *huh*
 class RedisCluster
