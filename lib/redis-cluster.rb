@@ -10,7 +10,6 @@ require_relative 'redis_cluster/future'
 require_relative 'redis_cluster/function'
 require_relative 'redis_cluster/middlewares'
 
-
 # RedisCluster is a client for redis-cluster *huh*
 class RedisCluster
   include MonitorMixin

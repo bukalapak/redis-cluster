@@ -5,7 +5,6 @@ require 'redis'
 require_relative 'error'
 require_relative 'version'
 
-
 class RedisCluster
 
   # Client is a decorator object for Redis::Client. It add queue to support pipelining and another
